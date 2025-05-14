@@ -1,0 +1,104 @@
+id,agent_type,prediction_factors,feedback,age,gender,race,ethnicity,time,time_elapsed
+1,naive,I tried to judge which door the snack on the floor was closest to.,N/A,38,Female,White,Non-Hispanic,527.557,537602
+2,sophisticated,I really tried to base it off how I played the game,na,19,Female,White,Non-Hispanic,407.393,419109
+3,sophisticated,"If the snack was right in front of the person's door, I felt more like they probably took it.  If it was closer to the refrigerator where they were more likely to walk then it felt a lot less certain who took the snack.",Not anything at this time.,38,Female,White,Non-Hispanic,799.231,792615
+4,naive,Whether the path taken for each individual made sense or not. Was it out of the way back to the room etc.,nope!,26,Male,White,Non-Hispanic,467.483,474276
+5,sophisticated,I made my decision based on who is closer to the crumbs,No,44,Female,Black/African American,Non-Hispanic,737.606,1771307
+6,sophisticated,The location of the crumbs.,NA,36,Male,NA,Hispanic,613.274,619817
+7,naive,I thought about the likely path they would've taken and which areas of the room that would cover. Where the one crumb fell based on those prediction is how I based my answers.,NA,25,Male,Biracial; Filipino/White,Non-Hispanic,469.567,465317
+8,naive,It depended on where the agents room was and if they would have walked where the snacks were dropped.,no,53,Female,White,Non-Hispanic,615.197,610680
+9,sophisticated,the path to the snacks,n/a,43,Female,Black/African American,Non-Hispanic,1213.23,1468719
+10,sophisticated,depending where the crumbs where. most of time it could be either. just depending on the pathways,NA,46,Female,White,Non-Hispanic,819.63,816792
+11,sophisticated,"Which room the crumbs were closer to, and also if it made sense for the person in the room to take that path.",No,23,Male,White,Hispanic,555.647,761839
+12,naive,"To predict which agent took the snack, I considered how close the crumbs were to which agent's apartment and whether or not the two agent's potential route to the fridge could overlap in any way.",N,27,Female,Asian,Non-Hispanic,395.233,390177
+13,naive,It was where the snack was placed and which one was closer,None,64,Female,Black/African American,Non-Hispanic,1542.463,1572119
+14,naive,I looked for the most likely paths given their proximity and other factors.,No,32,Male,White,Non-Hispanic,505.15,500740
+15,naive,"If the crumbs were directly by the door, the culprit was obvious and then the other times I just went off of how likely of a path each roommate was to take.",NA,30,Female,White,Non-Hispanic,544.679,540923
+16,sophisticated,"How close the crumbs were to the doorway of one of the roommates, along with how likely/unlikely the other roommate would have dropped the crumbs in that spot relative to their likely path back to their room.",No questions or concerns,51,Male,White,Non-Hispanic,749.138,755566
+17,naive,"I mapped out the path each of them would possibly take to get to the fridge and back, and compared it to where the crumbs are left. I made my predictions based on how close the crumb was to each person's path.",NA,24,Female,Asian,Non-Hispanic,835.445,830613
+18,naive,i judged whether the crumbs were in the path i myself would likely have taken if i were person a or b.,no,61,Female,White,Non-Hispanic,545.494,541033
+19,sophisticated,"I generally allotted some probability toward whomever the crumbs were closest to, but also tried to take into account the fact that they can take paths that take them closer to the other resident's room.",This was interesting! I'm curious to know what it's studying.,37,Female,White,Non-Hispanic,442.384,816293
+20,sophisticated,The proximity to the roommates door.,No,77,Female,White,Non-Hispanic,698.697,693050
+21,naive,Usually the side of the apartment where the crumbs appeared can be tied to the person who took the snacks.,none!,24,Female,Black/African American,Hispanic,570.643,705031
+22,sophisticated,The location of the crumbs relative to the path that I think each agent would take.,May I please have a bonus to help with groceries?,40,Male,White,Non-Hispanic,551.971,548243
+23,naive,Whichever room the snack was closer to increased my prediction to their side,no,23,Female,Asian,Non-Hispanic,335.116,330074
+24,naive,The likely path they would have taken.,this was fun,43,Female,White,Non-Hispanic,469.805,466255
+25,sophisticated,whetherr it would be loical to be in the path,NA,30,Female,White,Hispanic,563.45,612346
+26,naive,Depended on how close the crumbs were to each person,no,31,Female,White,Non-Hispanic,400.088,396362
+27,naive,following the tile,no,49,Female,Black/African American,Non-Hispanic,1099.375,1201905
+28,sophisticated,I thought about whether the person would want to be seen by the other resident after stealing the snack.,No questions,29,Female,Asian,Non-Hispanic,373.975,375541
+29,naive,I looked at the place the crumbs were and decided which path they would’ve been on. Sometimes it was closer than others but most times it was clear which path they were left.,None,50,Female,White,Non-Hispanic,848.53,849987
+30,naive,"I took into account which route I would take as the agent, also who's path and room the crumbs were closer to",no,28,Female,White,Non-Hispanic,779.031,775294
+31,sophisticated,The proximity of the crumbs to the agents room was used to determine whether or not they were the culprit.,"Interesting study, it was a challenge",58,Female,Black/African American,Non-Hispanic,1329.027,1401405
+32,sophisticated,I looked for the crumbs and imagined both people's paths.,No,60,Female,White,Non-Hispanic,1410.597,1412166
+33,naive,if the snack was in the path of that particular person,no,28,Male,Asian,Non-Hispanic,544.662,625175
+34,sophisticated,Just proximity to their door.,NA,39,Female,White,Non-Hispanic,438.399,675008
+35,sophisticated,If the person had to go way out of their way against a normal walking path I tended to think they did NOT steal the snack.,NA,60,Female,White,Non-Hispanic,594.902,616158
+36,naive,I tried to map out the reasonable paths and hoped the crumbs only landed on one,NA,23,Female,White,Non-Hispanic,367.444,365402
+37,naive,I made my decision based on where the crumbs were left.,none,25,Female,White,Hispanic,459.579,456151
+38,sophisticated,"I thought about who the crumbs were closer to and how likely it would be for a person to take that route. For example, would a person have to step on that spot to get back to their room?",NA,31,Female,Asian,Non-Hispanic,662.693,659633
+39,sophisticated,Picking the one that looked like a set-up.,NA,35,Female,White,Non-Hispanic,496.895,491423
+40,naive,I thought about the most logical paths (In my opinion) on which each resident could have taken and applied that to my guess on who left the crumbs on said tile/path.,Was a fun experiment thank you.,27,Male,White,Non-Hispanic,588.088,587397
+41,naive,"It seems the one that was closer to the path,",NA,54,Female,Black/African American,Non-Hispanic,1713.258,1752575
+42,sophisticated,Where the crumbs were located and if the other person would have walked that path back.,NA,40,Male,White,Non-Hispanic,412.399,409479
+43,naive,"I considered the proximity of the crumbs to the individual rooms. Then, I thought abut what path would make most sense.",N/A,23,Female,White,Non-Hispanic,425.95,424332
+44,sophisticated,Whose side of the apartment the crumbs were on and if the crumbs were on a plausible path for each agent.,NA,23,Female,White,Non-Hispanic,947.875,950348
+45,naive,I looked at where the snacks fell and if I thought i would walk that way to get back to my space.,no,47,Female,White,Non-Hispanic,353.537,365366
+46,naive,I figured the snack that was closest to the most likely path was the one to pick.,It was fun.,46,Male,White,Non-Hispanic,779.783,776305
+47,sophisticated,"I saw how close the dropped snack was to the door of the agent, and the distance from the fridge. The closer to the fridge, the more uncertain I was.",NA,40,Male,Asian,Non-Hispanic,397.338,492307
+48,naive,I thought about each person's path back to their room and went off that.,NA,30,Female,White,Non-Hispanic,657.764,654159
+49,sophisticated,The position of the crumbs.,NA,34,Female,Black/African American,Non-Hispanic,796.337,790079
+50,sophisticated,I went with which side the snack was closet to,no. it was fun,31,Male,White,Non-Hispanic,622.284,617937
+51,naive,"If it was directly in or near an obvious shortest distance path, I chose that character more strongly.",None,39,Male,White,Non-Hispanic,420.248,568332
+52,sophisticated,"I honestly just tried to think of the paths I would take if I were each roommate and whichever one aligned better with each individual, they would be the one to take the snack.","No, I do not, it was very interesting!",20,Female,Black/African American,Non-Hispanic,1402.292,1422720
+53,sophisticated,How close the crumbs were to the room,NA,29,Male,Black/African American,Non-Hispanic,502.168,495672
+54,naive,If the crumbs were in front of the doors or right next to them.,no but this was fun!,39,Female,White,Non-Hispanic,641.883,637888
+55,sophisticated,I looked at whether the path made sense for which resident and how they would have moved to lower suspicion.,NA,22,Male,Black/African American,Hispanic,475.844,471754
+56,naive,I looked at how close the crumbs were to them.,no,27,Female,White,Non-Hispanic,1375.213,1565918
+57,sophisticated,The crumbs left in front of the door,no,35,Male,Black/African American,Non-Hispanic,575.998,1401518
+58,naive,"I took in consideration the pathway it would take to the fridge, if it seemed like it was following one or the other. I also took in consideration the which side the crumbs were closer to, if it was on the far left or right, then it would most likely be whoever was on that side.",no,34,Female,Asian,Non-Hispanic,642.558,639027
+59,sophisticated,"In most scenarios, I don't think the agents would be as devious as I was at trying to mask where their crumbs could fall, so I looked at obstructions of direct paths and the location of the crumbs closest to rooms along direct paths.",NA,35,Male,White,Non-Hispanic,712.26,707870
+60,sophisticated,How close the crumbs were to the door.,Fun,67,Female,White,Non-Hispanic,1239.459,1235527
+61,sophisticated,I mostly picked the person closest to the crumbs. If there were large objects between the fridge or the crumbs and the person's room I tended to pick a higher certainty for the other person.,NA,48,Female,White,Non-Hispanic,807.725,803358
+62,naive,How far the crumbs were from each room.,NA,29,Female,White,Non-Hispanic,289.475,563627
+63,sophisticated,I was looking at where the snacks were dropped.,none,41,Female,White,Non-Hispanic,675.812,672301
+64,sophisticated,"Location of where the evidence was found, but also realizing that either roommate could walk around",NA,34,Male,White,Non-Hispanic,412.967,400361
+65,sophisticated,I looked at where the crumbs landed and assumed the agent that took the snacks was not trying to conceal where they went.  But I didn't put the probability that they took it very high because I also assumed they might have walked the path the other agent would have used to throw off the trail.,No.  Thank you!,47,Female,White,Non-Hispanic,645.356,641604
+66,sophisticated,The path closer to the crumbs to the room.,NA,46,Female,Black/African American,Non-Hispanic,1514.82,1510105
+67,naive,I chose whoever was closer,mo,47,Female,White,Non-Hispanic,559.813,1116411
+68,naive,"I based my predictions based on the paths that made the most sense to me. For example, a snack directly outside one person's door seems most convincing.",NA,20,Female,White,Non-Hispanic,379.611,376314
+69,naive,The snacks were closer to the persons room. Some snacks were close to the fridge so I was uncertain.,No,28,Female,Black/African American,Non-Hispanic,346.486,344769
+70,sophisticated,I think if the path looked odd than I just the person further way,no,42,Male,White,Hispanic,609.171,609431
+71,naive,Just assumed it was AI path finding in video games and assumed their most likely movements. Also factored in that they would take the shortest route.,No.,31,Male,White,Non-Hispanic,824.969,828234
+72,sophisticated,I really just looked at where their rooms were in location to where the crumbs were found. Was it likely that they went so far out of their way just to make it seem like they weren't the ones who took the snack? Idk,NA,33,Female,White,Non-Hispanic,617.681,703076
+73,naive,"Proximity to the agent's door, general direction with respect to most likely path back to agent's door.",n/a,51,Female,White,Non-Hispanic,570.179,573265
+74,sophisticated,Which bedroom door the crumbs were closest to.,NA,30,Male,White,Non-Hispanic,404.843,634876
+75,naive,I carefully watched the part and chose whose part was shorter making them more likely to take the snack,The study was very interesting,43,Male,Hispanic,Hispanic,591.959,598421
+76,naive,"I based it on how close to the person's room the crumbs were. If the crumbs were close to the fridge opening square, then I choose closer to 'undecided'.",NA,24,Non-binary,mixed race,Hispanic,328.921,326056
+77,sophisticated,I pictured how the person would've walked to their room.,NA,38,Female,White,Non-Hispanic,430.278,427798
+78,sophisticated,Basing it off of who's path it most likely was,When I chose the paths I tried to pick a long way back to make the crumb harder to link back to my agent,33,Female,White,Non-Hispanic,546.585,542965
+79,naive,I decided which path each character would most likely take to get back to their room. From there I could deduce which character would be more likely to follow a path that would include the square with the crumbs.,NA,35,Female,White,Non-Hispanic,520.396,537787
+80,naive,How likely it is for that person to have taken that path.,NA,23,Male,White,Non-Hispanic,232.928,806508
+81,naive,The square closest to the path the resident would have taken to the fridge is what tells me who took the snack.,NA,29,Male,White,Non-Hispanic,552.932,554739
+82,naive,I took in account likely paths and proximity of crumbs to their doors.,nope,26,Male,Black/African American,Non-Hispanic,654.093,698450
+83,sophisticated,The location of many was a good giveaway. Trying to figure the track they would use back and forth was helpful but not certain.,I thought it was fun but I would like to know if I was correct in my guesses,61,Male,Black/African American,Non-Hispanic,650.187,646092
+84,naive,The crumbs in the pathway from the fridge and back contributed to finding the snacker.,This experiment was interesting and overall great. Thank you!,26,Female,White,Non-Hispanic,799.298,794826
+85,naive,"My predictions were mostly based off of the location of the crumbs in closet proximity to a specific persons room. If I could not guess off the previous method, the most obvious route that a specific person would've taken was placed into consideration.",The study was a breath of fresh air compared to other studies. Thank you for the opportunity.,40,Male,Asian,Non-Hispanic,714.023,760835
+86,naive,"The proximity of the snack to the person's room. Also how close it still was to the fridge.
+
+
+",No,41,Female,White,Non-Hispanic,475.535,478803
+87,naive,if the snacks were on the path a character would take i chose them.,NA,33,Male,White,Non-Hispanic,627.273,622026
+88,sophisticated,"I looked at the location of the snack and where it fell. Based on the spot it fell in, I looked at the rooms and guessed who would have possibly taken that path.",NA,31,Female,Black/African American,Non-Hispanic,489.893,486612
+89,naive,The placement of the crumbs in relation to the rooms they were returning to.,n/a,38,Female,White,Non-Hispanic,521.48,517618
+90,sophisticated,I guessed who stole the snack based on where the crumbs were located in relation to each roommates door and the likely paths they might take to and from the fridge.,No comments or questions.,25,Female,White,Non-Hispanic,760.02,907624
+91,naive,"I predicted the path that each character would take to get to the fridge & back, and I chose the character that had crumbs along their path that I imagined they would take.",This study was very unique & interesting! I genuinely enjoyed participating in this experiment. The instructions were also very easy to comprehend as well.,35,Female,White,Non-Hispanic,844.488,857897
+92,naive,where the snack was located,NA,56,Female,White,Non-Hispanic,564.888,560126
+93,sophisticated,"I knew that the agents could be deceptive, so I was never TOO far from uncertain. I moved the slider slightly close to the agent who was closer to the crumbs",no,38,Female,White,Non-Hispanic,378.048,618005
+94,naive,how close the snack was to their doorway and what path they may have taken to get to the fridge,no thanks,57,Female,White,Non-Hispanic,647.768,644276
+95,sophisticated,"One was the fact that the thief would go out of their way to hide the fact they stole the snack. Another was the side of the refrigerator was accessed, however I am not sure if it wasn't always accessed from only one side.","No, thank you.",50,Female,White,Non-Hispanic,821.342,819004
+96,sophisticated,"If the snack was dropped near a roommate's door, but not directly on the way to their door, it was likely dropped by the other roommate. Whereas, if it was dropped directly on the way to one roommate's door, it was likely dropped by the person whose door it was dropped near.",N/A,55,Female,White,Non-Hispanic,824.436,990126
+97,sophisticated,how close the crumbs were,no,32,Male,Asian,Non-Hispanic,303.722,439997
+98,sophisticated,I chose the predictions based on who the crumbs were closer to.,No,27,Male,Black/African American,Non-Hispanic,552.708,727386
+99,sophisticated,I considered the path possible for each one to take,It was fun and interesting,28,Female,White,Non-Hispanic,1247.538,1243131
+100,sophisticated,How much out of the way the person had to go to have dropped the snack there,No,48,Male,White,Non-Hispanic,694.871,701680

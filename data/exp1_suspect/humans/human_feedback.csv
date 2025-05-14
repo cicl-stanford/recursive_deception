@@ -1,0 +1,102 @@
+id,agent_type,prediction_factors,feedback,age,gender,race,ethnicity,time,time_elapsed
+1,naive,I chose the path that generally took less steps.,No,26,Female,Asian,Non-Hispanic,645.012,634728
+2,sophisticated,i chose a path i thought wasn't obvious,NA,29,Male,Black/African American,Non-Hispanic,1869.656,1973056
+3,naive,"going diagnal felt more logical, i also avoided tables and walls when it was cramped",NA,21,Female,White,Non-Hispanic,448.838,448527
+4,sophisticated,They seemed the quickest for the agents.,Did they drop the crumbs? Did the 3rd roommate know it was them or did they suspect the other roommate who didn't steal the snacks?,35,Female,White,Non-Hispanic,539.074,565797
+5,sophisticated,I took the most direct path to the fridge but on the way back I tried to walk past the other roommate in case I dropped crumbs.,NA,50,Male,Asian,Non-Hispanic,653.904,844598
+6,naive,"I picked the paths I thought were most efficient. In some trials, I tweaked the path I took back for variety/personal preference.",NA,23,Female,Asian,Non-Hispanic,644.442,639593
+7,sophisticated,I was looking for to most direct path to create as few spills as possible.,NA,29,Female,White,Non-Hispanic,607.033,601987
+8,naive,"I mostly just picked paths felt relatively straight/efficient, but ideally without being too crowded by walls or furniture.",NA,34,Non-binary,White,Non-Hispanic,438.005,439923
+9,naive,It felt the most efficient,NA,22,Non-binary,Asian,Non-Hispanic,394.97,392440
+10,naive,They were more straightforward.,N/a,53,Male,White,Non-Hispanic,698.366,725419
+11,naive,I tried to do the shortest amount of turns possible without zig zagging.,NA,27,Male,Asian,Hispanic,323.911,316575
+12,naive,"I tried to pick short paths, or paths I thought I would take in real life.",NA,41,Female,White,Non-Hispanic,622.3,616779
+13,sophisticated,At first I was trying to use lower traffic areas to get back thinking if they dropped the food it would be harder for the roommate to find it but then I thought a shorter path would be better for less chance to drop if it's per tile moved.,It was fun. Reminded me of an old RPG game on Nintendo from like the early 90's.,41,Male,White,Non-Hispanic,486.493,737277
+14,sophisticated,"I took the quickest route there, but the return trip  I tried to walk in front of the other persons room.",NA,39,Male,White,Non-Hispanic,631.04,622495
+15,sophisticated,I chose the paths that required the last amount of travel. This helped minimize the opportunities to leave a lot of crumbs.,NA,32,Female,Asian,Non-Hispanic,430.839,499848
+16,sophisticated,I tried to be as swift as possible.,NA,35,Female,Biracial,Non-Hispanic,863.664,911314
+17,naive,"I wanted to take as few turns as possible and minimize the distance between the character and the fridge, while also not turning around corners too close to the wall.","Nope! This was very fun, really cute designs.",35,Non-binary,White,Non-Hispanic,563.428,560463
+18,naive,I tried taking the paths that were the fastest to get to the fridge and back.,NA,28,Female,White,Non-Hispanic,458.303,455318
+19,naive,I chose the path of least resistance,"Nope, it was fun!",58,Female,White,Non-Hispanic,714.598,711220
+20,naive,"I wanted to take the shortest path as much as possible, especially when going to the fridge.",NA,23,Female,Asian,Non-Hispanic,466.778,464312
+21,naive,I mean I pick the fastest way to get to  fridge .,no,27,Male,White,Non-Hispanic,602.292,595863
+22,naive,Least resistance,Thank you for this opportunity to participate,41,Female,White,Non-Hispanic,659.394,649220
+23,sophisticated,I usually just took the shortest path to the location as I didn't see any indication of this 3rd roommate I heard of earlier to try and avoid.,NA,38,Male,Black/African American,Non-Hispanic,670.504,664007
+24,sophisticated,I took paths on the way back that would likely leave crumbs near the roommate's room so no one would suspect it was me.,NA,29,Female,White,Non-Hispanic,640.665,632527
+25,sophisticated,I tried to avoid the path I took and leave a path back which would likely make it harder to detect where the crumbs would land.,Nope,32,Male,Puerto Rican,Hispanic,609.922,602925
+26,naive,Seemed straight and to the point. Mose efficient.,Nope.,42,Male,White,Non-Hispanic,929.056,914377
+27,sophisticated,"I went for the quickest path that also didn't cut in front of what I thought would be the likely path of my roommate. Sometimes it was unavoidable to do so, and I then just went for quickest/shortest path.",none.,39,Male,White,Non-Hispanic,619.618,672367
+28,naive,I tried to take the paths that I thought were the straighter paths.,no,54,Female,White,Non-Hispanic,555.315,555001
+29,naive,"I took the easiest path to the fridge, but on the way back I felt like i had to take a different path.",Some of the apartments had really bad layouts.,24,Female,White,Non-Hispanic,736.529,745008
+30,naive,I just felt like they were the most direct paths. It made the most sense to me.,"I was kind of hoping for some puzzles. It was fun for what it was, though. Thank you.",37,Male,White,Non-Hispanic,609.511,604557
+31,naive,I wanted to take the shortest path possible. On the way back to the room I wanted to take the shortest path possible also so I used the same route about half the time. The other half I sort of got bored and wanted to do something different.,No.,42,Male,Asian,Non-Hispanic,578.349,571526
+32,naive,I tried to think about if I was in that position and what path I would take. I also thought about what would be the most efficient.,Nothing to add.,39,Male,White,Non-Hispanic,441.574,438065
+33,sophisticated,They seemed like the most logical ones to take.,no it was easy,64,Female,White,Non-Hispanic,882.333,872736
+34,naive,The paths I chose either followed an ideal path I had in my head or seemed efficient to get to the destination.,In reality paths do not follow a simple grid. More options would probably be needed to make a true scenario.,30,Male,White,Hispanic,820.7,879531
+35,naive,tried to make the least amount of turns while also not wanting to walk right up against objects or walls,NA,25,Female,Asian,Non-Hispanic,643.723,635249
+36,naive,I just went with my gut,NA,35,Female,White,Non-Hispanic,804.827,798817
+37,naive,I took the most direct path to save time and use of spaces.,Thank you,49,Female,White,Non-Hispanic,619.078,611325
+38,naive,Most of my paths I felt like were the straightest and shortest paths. I would experiment with some on the way back to the start spot to see if I could use less tiles.,n/a,24,Female,White,Non-Hispanic,584.568,569500
+39,naive,i took the paths that i thought would take the less amount of clicks.,the tile texture used for trials 7 and 18 made it confusing with knowing where each tile started and ended,27,Male,American Indian/Alaska Native,Hispanic,494.835,487787
+40,sophisticated,If the distance between my room and the fridge was close I would go straight from the fridge back to my room. If it was further I would walk near by my room mates room to make the likelihood of the crumbs falling near their space.,NA,26,Female,Asian,Non-Hispanic,513.919,509468
+41,sophisticated,"If the fridge was close to the other roommates room, I decided to make a detour to maybe increase the chance that the crumbs would be left outside their door and not mine.",n/a,26,Male,Asian,Non-Hispanic,550.512,546092
+42,naive,They were the shortest and simplest paths to take.,NA,31,Female,White,Non-Hispanic,678.167,665628
+43,naive,They were the simplest most direct routes.,Why was the game so easy?,38,Male,White,Non-Hispanic,629.237,622123
+44,sophisticated,I tried to take the easiest and the most direct path. On the way back I tried to stay near the wall because if they dropped crumbs it would be less noticeable.,n/a,27,Female,White,Non-Hispanic,529.666,521907
+45,naive,they seemed like the easiest and most straightforward way to get to the target.,NA,25,Female,Asian,Non-Hispanic,347.047,342643
+46,sophisticated,"path 1 is most direct to the fridge, and path 2 meandered around the room and closer to roommates doors to avoid leaving evidence straight to my own door",NA,25,Non-binary,White,Non-Hispanic,550.822,640776
+47,naive,The paths all felt like the most obvious or quickest paths available for each resident.,"If possible, I would like to know what the purpose of the experiment was whenever that information is available.",22,Male,American Indian/Alaska Native,Hispanic,362.888,357358
+48,naive,I tried to pick paths that weren't too robotic but still efficient paths that humans would choose to take.,N/A,22,Female,White,Hispanic,566.563,555085
+49,naive,I like to take quick easy routes or just walk it isn’t really a reason I’m just walking.,NA,22,Male,White,Hispanic,1058.793,1195709
+50,sophisticated,I attempted to take the shortest path to minimize crumb risk. I also tried to avoid doorways.,N/A,26,Male,White,Non-Hispanic,882.21,896053
+51,naive,I mostly tried to find the shortest path from each star to finish. Occasionally I might change paths if they felt more natural.,No.,34,Male,Black/African American,Non-Hispanic,534.975,537553
+52,sophisticated,"To me, it felt that if there were a possibility of crumbs, the path would have a possibility of it pointing towards the roommate.",None.,28,Female,Hispanic,Hispanic,1177.628,1254383
+53,sophisticated,Shortest path to the fridge for efficiency. Prolonged path in front of the other roommate's room area for potential food droppings.,No. Thanks for having me.,49,Male,Asian,Non-Hispanic,1072.294,1107608
+54,naive,The paths I selected were the most direct and fewest steps.,no,55,Male,White,Non-Hispanic,771.228,763662
+55,naive,i tried to make thee paths as short as possible,NA,19,Male,White,Non-Hispanic,738.19,1440448
+56,naive,Path of least resistance,NA,31,Male,White,Non-Hispanic,728.188,1061225
+57,naive,"I chose each path, in no particular order.  I was careful to avoid all obsticles",no comments at this time,59,Male,White,Non-Hispanic,625.304,1034096
+58,sophisticated,I tried to pick the most direct routes to the fridge.,NA,46,Male,White,Hispanic,1031.23,1118582
+59,naive,I was driven by an insatiable curiosity to challenge conventional thinking,Love the study,20,Male,Black/African American,Non-Hispanic,972.459,1054723
+60,naive,Seemed easiest/shortest.,Nope,50,Female,White,Non-Hispanic,496.531,498088
+61,naive,I generally tried to take the most optimal/shortest path possible.,"I wish it would've been possible to click and drag to select tiles, instead of having to click every individual one.",20,Male,White,Non-Hispanic,414.907,495334
+62,sophisticated,The shortest path to the fridge for convenience. Then the long way around on the way back with parallel paths traversing in a back and forth pattern being mindful of dropping crumbs in the least obvious route.,Great study! Interesting topic and exercise! Enjoyed participating!,48,Male,Asian,Non-Hispanic,1512.53,1506976
+63,naive,Tried to go the most direct path.,NA,57,Male,White,Non-Hispanic,854.291,845930
+64,naive,I tried to imagine what I actually would do myself.,I enjoyed it,20,Male,White,Hispanic,579.31,579240
+65,naive,interesting,nice study,33,Female,White,Non-Hispanic,1399.664,1548512
+66,naive,No conscious reason. Just vibing.,NA,40,Male,White,Non-Hispanic,445.25,440216
+67,naive,They were the shortest and fastest route,none,32,Male,White,Non-Hispanic,798.498,2184534
+68,sophisticated,I took the return paths to pass by door steps of other roommates. That way the crumbs have a higher probability of dispersing over a wider area and create confusion as to which roommate was actually guilty of stealing the snacks.,n/a,53,Female,Black/African American,Non-Hispanic,1710.142,1829433
+69,sophisticated,In case crumbs were dropped I wanted to make sure it was not in the path of the roomates room.,So cute and fun! I LOVED IT!!!,47,Female,Biracial,Non-Hispanic,2024.627,3278258
+70,naive,I tried to take the most direct paths possible.  I did not want to waste clicks.,I don't have any questions about the experiment.,58,Male,White,Non-Hispanic,544.795,534905
+71,naive,Took the most direct,NA,45,Male,White,Non-Hispanic,596.007,585814
+72,sophisticated,"I tried the shortest route to reach the fridge for speed, and then I did my best to obfuscate the return path so if the person dropped crumbles, the other roommate would get the blame.",No.,40,Female,White,Hispanic,663.067,660379
+73,sophisticated,I tried to take the shortest path to the refrigerator and then tried to step outside of that path and towards the other roommates room as much as possible on the way back.,NA,33,Non-binary,White,Non-Hispanic,770.478,761331
+74,naive,Mostly the efficient choice. When two paths were equally efficient I chose the one farthest away from the roomate.,NA,36,Male,White,Non-Hispanic,433.614,426315
+75,naive,"I took the most direct paths possible, in general.  I wanted to save energy by not taking a roundabout path.",No,48,Female,Asian,Non-Hispanic,752.852,840503
+76,sophisticated,I felt like I took the most direct path most of the time. Sometimes on the way back I would think about how I would walk through a house and change my path based on that.,NA,35,Female,White,Non-Hispanic,528.798,619085
+77,sophisticated,"Since it was likely I would drop crumbs, I walked in front of the other room as much as I could before making my way to my room.",It was a fun activity.,57,Male,White,Non-Hispanic,1188.887,1183554
+78,sophisticated,"I wanted to minimize the number of steps for the lowest chance of spilling crumbs. On the way back, while I would keep for the fastest path, I'd try to get that path as indirectly as possible to lower the chance of crumbs near my resident's bedroom.","Having to click individually for each square is a little annoying and exhausting. If I could drag, or if it would auto-complete a line if I clicked far off, that would be helpful.",21,Male,Multiracial,Non-Hispanic,578.175,587079
+79,naive,I used the path of the tiles that led me to the fridge and back.,no,67,Female,Black/African American,Non-Hispanic,954.499,953651
+80,sophisticated,The reasons I decided to take the paths is the side of the tiles to the fridge in an easy way,NA,59,Male,White,Non-Hispanic,2790.396,3393415
+81,sophisticated,on the way back i took paths that there would be no reaso for te roommagte to take,no,34,Male,White,Non-Hispanic,1219.909,1214632
+82,sophisticated,They were off the path that I took to get to the fridge,"Jesus Loves You
+this was fun, would like to do it again or something similar",35,Male,White,Hispanic,716.407,691335
+83,sophisticated,I tried to take the shortest path.,a lot of the clicks didn't register. I had to click multiple times.,33,Male,White,Hispanic,526.963,523137
+84,sophisticated,I wanted to avoid the furniture as much as possible. Plus I wanted to find a clear path.,none,50,Male,Black/African American,Non-Hispanic,1594.96,1613556
+85,sophisticated,I took the short path getting to the fridge since. I took random routes back for the most part thinking the crumbs might not lead back to me,no,32,Male,White,Non-Hispanic,649.542,644550
+86,sophisticated,I tried to take the most direct and fastest way to the refrigerator.,NA,36,Male,White,Non-Hispanic,586.13,601071
+87,sophisticated,I tried not to directly repeat a pattern or to just go over where I had already gone to get there.,No,49,Female,White,Hispanic,971.855,1077025
+88,sophisticated,"Going to the fridge, I just took the shortest/most direct path because it didn't matter.  Returning, I tried to steer towards the roommate's room insofar as I could do it without extra steps, usually.",I'm very curious what you're studying.,50,Female,White,Non-Hispanic,951.575,1177484
+89,sophisticated,I decided to take slightly different paths going to the fridge and then back to the starting location to make it easier to notice if I left behind any evidence.,N/a,26,Male,Black/African American,Hispanic,841.269,887278
+90,sophisticated,There were not many choices that were hidden paths to take so I took the best one I thought I should,NA,39,Female,White,Non-Hispanic,1492.988,1544728
+91,NA,i consider it shorter,none,23,Male,Black/African American,Non-Hispanic,1247.532,2065479
+92,NA,I just tried to choose a somewhat different path for each trial. I figured maybe that way it would be harder to catch who took the snack.,NA,25,Male,White,Hispanic,786.029,853692
+93,NA,"The faster you get to and back from the fridge, the less likely you'd get caught or leave crumbs.",No,29,Male,White,Non-Hispanic,473.739,698969
+94,NA,I was mainly just going for the most direct route.,why? Just in general.,47,Male,White,Non-Hispanic,527.202,518076
+95,NA,They were the easiest paths to take.,No,40,Male,Black/African American,Non-Hispanic,1459.854,1468559
+96,NA,I tried to take the shortest step without being seen,NA,31,Male,White,Non-Hispanic,697.748,1152574
+97,NA,They were the shortest routes.,Nothing to ask.,45,Male,White,Non-Hispanic,1063.734,1178662
+98,NA,To try to leave crumbs on a path that the second room mate might take from the fridge to their room.,"No, thank you!",54,Female,White,Non-Hispanic,1187.488,1184508
+99,NA,I took the shortest path,NA,40,Male,Black/African American,Non-Hispanic,1779.972,2133778
+100,NA,I chose the paths to minimize distance and avoid obstacles for efficiency.,No questions or comments at the moment. Thank you for letting me participate in this study.,52,Female,Asian,Non-Hispanic,967.799,1159751

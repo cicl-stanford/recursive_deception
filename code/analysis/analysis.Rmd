@@ -1,0 +1,1149 @@
+---
+title: "Leave a trace: Recursive reasoning about deceptive behavior"
+author: "Verona Teo, Sarah A. Wu, Erik Brockbank, and Tobias Gerstenberg"
+date: "`r format(Sys.Date(), '%B %d, %Y')`"
+output:
+  bookdown::html_document2:
+    toc: true
+    toc_depth: 3
+    toc_float: true
+    theme: cosmo
+    highlight: tango
+---
+
+# Setup
+
+```{r setup, include = F, message = F, warning = F}
+# load relevant libraries and functions
+require(knitr)         # for knitting        
+library(ggstatsplot)   # extension of ggplot2
+library(Metrics)       # for RMSE
+library(DT)            # for datatable() function 
+library(brms)          # for Bayesian regression models
+library(emmeans)       # for linear contrasts
+library(Hmisc)         # for bootstrapped confidence intervals
+library(scales)        # hue palette
+library(patchwork)     # for multiple plots
+library(png)           # for working with images
+library(grid)          # for grob
+library(egg)           # for geom_custom
+library(transport)     # for Wasserstein distance
+library(MASS)          # for fitting distributions to data
+library(tidyverse)     # for everything else
+
+knitr::opts_chunk$set(echo = T, warning = F, message = F)
+
+# set default plot theme 
+theme_set(theme_classic() + 
+            theme(text = element_text(size = 14)))
+
+# suppress warnings about grouping 
+options(dplyr.summarise.inform = F)
+options(xtable.floating = F)
+options(xtable.timestamp = "")
+
+set.seed(1)
+```
+
+```{r include = F}
+trials = paste0('snack', setdiff(1:10, 4))
+agents = c('A', 'B')
+agent_types = c('naive', 'sophisticated')
+path_types = c("path to fridge", "return path")
+
+data_dir = '../../data/'
+figures_dir = '../../figures/'
+images_dir = '../trials/'
+
+dodge_width = 0.9
+agent_type_colors = c('naive' = 'darkorange2',
+                      'sophisticated' = 'deepskyblue2')
+path_type_alphas = c(0.4, 0.8)
+model_labels = c('human' = 'Humans',
+                 'rsm' = 'RSM',
+                 'emp' = 'Empirical',
+                 'emp_mis' = 'Mismatched empirical',
+                 'gpt4o' = 'GPT-4o',
+                 'unif' = 'Uniform simulation',
+                 'heu' = 'Heuristic')
+```
+
+```{r include = F}
+# Issue with patchwork collect guides (see (this issue)[https://github.com/thomasp85/patchwork/issues/404])
+
+guides_build_mod <- function (guides, theme){
+  legend.spacing.y <- calc_element("legend.spacing.y", theme)  # modified by me
+  legend.spacing.x <- calc_element("legend.spacing.x", theme)  # modified by me
+  legend.box.margin <- calc_element("legend.box.margin", theme) %||% 
+    margin()
+  widths <- exec(unit.c, !!!lapply(guides, gtable_width))
+  heights <- exec(unit.c, !!!lapply(guides, gtable_height))
+  just <- valid.just(calc_element("legend.box.just", theme))
+  xjust <- just[1]
+  yjust <- just[2]
+  vert <- identical(calc_element("legend.box", theme), "horizontal")
+  guides <- lapply(guides, function(g) {
+    editGrob(g, vp = viewport(x = xjust, y = yjust, just = c(xjust, 
+                                                             yjust), height = if (vert) 
+                                                               heightDetails(g)
+                              else 1, width = if (!vert) 
+                                widthDetails(g)
+                              else 1))
+  })
+  guide_ind <- seq(by = 2, length.out = length(guides))
+  sep_ind <- seq(2, by = 2, length.out = length(guides) - 1)
+  if (vert) {
+    heights <- max(heights)
+    if (length(widths) != 1) {
+      w <- unit(rep_len(0, length(widths) * 2 - 1), "mm")
+      w[guide_ind] <- widths
+      w[sep_ind] <- legend.spacing.x
+      widths <- w
+    }
+  }
+  else {
+    widths <- max(widths)
+    if (length(heights) != 1) {
+      h <- unit(rep_len(0, length(heights) * 2 - 1), "mm")
+      h[guide_ind] <- heights
+      h[sep_ind] <- legend.spacing.y
+      heights <- h
+    }
+  }
+  widths <- unit.c(legend.box.margin[4], widths, legend.box.margin[2])
+  heights <- unit.c(legend.box.margin[1], heights, legend.box.margin[3])
+  guides <- gtable_add_grob(gtable(widths, heights, name = "guide-box"), 
+                            guides, t = 1 + if (!vert) 
+                              guide_ind
+                            else 1, l = 1 + if (vert) 
+                              guide_ind
+                            else 1, name = "guides")
+  gtable_add_grob(guides, element_render(theme, "legend.box.background"), 
+                  t = 1, l = 1, b = -1, r = -1, z = -Inf, clip = "off", 
+                  name = "legend.box.background")
+}
+
+environment(guides_build_mod) <- asNamespace('patchwork')
+assignInNamespace("guides_build", guides_build_mod, ns = "patchwork")
+```
+
+
+# Helper functions
+
+## Demographics
+```{r include = F}
+print_demographics = function(data) {
+  # gender
+  data %>%
+    group_by(gender) %>%
+    summarise(n = n()) %>%
+    print()
+  
+  # age
+  print(sprintf('age: M = %.0f, SD = %.0f',
+                mean(data$age, na.rm = T),
+                sd(data$age, na.rm = T)))
+  
+  # race
+  data %>%
+    group_by(race) %>%
+    summarise(n = n()) %>%
+    print()
+  
+  # ethnicity
+  data %>%
+    group_by(ethnicity) %>%
+    summarise(n = n()) %>%
+    print()
+
+  # time taken
+  print(sprintf('time: %.1f minutes (SD = %.1f)',
+                mean(data$time, na.rm = T)/60,
+                sd(data$time, na.rm = T)/60))
+}
+```
+
+## Earth Mover's Distance (Wasserstein distance)
+```{r}
+compute_emd = function(path_data) {
+  models = setdiff(unique(path_data$model), 'human')
+  data = expand.grid(trial = trials,
+                     agent = agents,
+                     agent_type = agent_types,
+                     model = models,
+                     emd = NA)
+  
+  for (this_trial in trials) {
+    for (this_agent in agents) {
+      for (this_agent_type in agent_types) {
+        d = path_data %>% 
+          filter(agent == this_agent,
+                 trial == this_trial,
+                 path_type == 'return path') %>%
+          group_by(agent_type, model, x, y) %>%
+          summarise(n = n()) %>%
+          ungroup(x, y) %>% 
+          mutate(p = n / sum(n)) %>% 
+          ungroup()
+        d.human = d %>%
+          filter(model == 'human', agent_type == this_agent_type)
+        for (this_model in models) {
+          d.model = d %>%
+            filter(model == this_model, agent_type == this_agent_type)
+          if (length(d.model$p) > 0) {
+            this_w = wasserstein(wpp(data.matrix(d.human %>% select(x, y)), d.human$p),
+                                 wpp(data.matrix(d.model %>% select(x, y)), d.model$p))
+            data = data %>%
+              mutate(emd = ifelse((trial == this_trial) &
+                                    (agent == this_agent) &
+                                    (agent_type == this_agent_type) &
+                                    (model == this_model),
+                                  this_w,
+                                  emd)
+              )
+          }
+        }
+      }
+    }
+  }
+  
+  return(data)
+}
+```
+
+## Miscellaneous
+```{r include = F}
+rmse2 = function(x, y, na.rm = TRUE){
+  res = sqrt(mean((x - y)^2, na.rm = na.rm))
+  return(res)
+}
+```
+
+# Experiment 1 (Suspect)
+
+## Data
+```{r include = F}
+import_suspect_data = function(dir_name) {
+  data = data.frame()
+  for (trial in trials) {
+    data = data %>%
+      rbind(read_csv(str_c(data_dir, 'exp1_suspect/', dir_name, trial, '.csv'),
+                     show_col_types = F) %>%
+              mutate(trial = sub('_.*', '', trial),
+                     # remove spaces and switch () to []
+                     path = gsub('\\(', '[', path),
+                     path = gsub('\\)', ']', path),
+                     path = gsub(' ', '', path)) %>%
+              group_by(trial, agent, agent_type, is_return) %>%
+              mutate(id = row_number()) %>%
+              ungroup())
+  }
+  return(data)
+}
+
+import_suspect_model_data = function(w, temp) {
+  dir_name = str_c('rsm/w', w, '_temp', temp, '/')
+  return(import_suspect_data(dir_name))
+}
+
+combine_suspect_data = function(dataframes) {
+  data = data.frame()
+  for (df in names(dataframes)) {
+    data = data %>%
+      rbind(dataframes[[df]] %>%
+              mutate(model = df))
+  }
+  data = data %>%
+    mutate(agent_type = factor(agent_type, levels = agent_types),
+           path_type = ifelse(is_return, "return path", "path to fridge"),
+           path_type = factor(path_type, levels = path_types),
+           path_len = str_count(path, "\\[\\d+,\\d+\\]"),
+           trial = factor(trial)) %>%
+    select(-is_return)
+  return(data)
+}
+
+get_suspect_paths = function(suspect_data, jitter_amount = 0.1) {
+  data = suspect_data %>%
+    mutate(path = str_remove_all(path, "\\[\\["),
+           path = str_remove_all(path, "\\]\\]")) %>%
+    # Split by inner coordinates
+    separate_rows(path, sep = "\\],\\[") %>%
+    # Add brackets back for each coordinate
+    mutate(tile = str_c("[", path, "]")) %>%
+    # Extract x and y values
+    mutate(x = as.numeric(str_extract(tile, "(?<=\\[)\\d+")),
+           y = 15 - as.numeric(str_extract(tile, "\\d+(?=\\])")),
+           xx = jitter(x, amount = jitter_amount) + 0.5,
+           yy = jitter(y, amount = jitter_amount) - 0.5) %>%
+    select(-path, -path_len) %>%
+    group_by(model, id, trial, agent, agent_type, path_type) %>%
+    mutate(progress = row_number()/n()) %>%
+    ungroup()
+  return(data)
+}
+```
+
+### Trial images
+```{r}
+images.suspect = data.frame(trial = trials) %>%
+  mutate(grob = map(.x = trial,
+                    .f = ~ readPNG(str_c(images_dir, 'exp1_suspect/images/',
+                                          .x, '_A1.png'))))
+```
+
+### Humans
+```{r}
+data.suspect.human = read_csv(str_c(data_dir, 'exp1_suspect/humans/human_trials.csv'),
+                              show_col_types = F)
+
+data.suspect.feedback = read_csv(str_c(data_dir, 'exp1_suspect/humans/human_feedback.csv'),
+                              show_col_types = F)
+
+data.suspect.feedback %>%
+  select(id, agent_type, prediction_factors) %>%
+  datatable(rownames = F)
+```
+Demographics:
+```{r}
+print_demographics(data.suspect.feedback)
+```
+
+### RSM
+
+Grid search:
+```{r echo = F}
+w_values = seq(0.1, 0.8, 0.1)
+temp_values = c(0.01, 0.03, 0.05, 0.1, 0.15, 0.2)
+gs.suspect = expand.grid(w = w_values,
+                         temp = temp_values,
+                         emd_n = NA,
+                         emd_s = NA)
+
+for (this_w in w_values) {
+  for (this_temp in temp_values) {
+    if (!dir.exists(str_c(data_dir, 'exp1_suspect/rsm/w',
+                          this_w, '_temp', this_temp))) {
+      gs.suspect = gs.suspect %>%
+        filter(!(w == this_w & temp == this_temp))
+      next
+    }
+    d = combine_suspect_data(list(
+      'human' = data.suspect.human,
+      'rsm' = import_suspect_model_data(this_w, this_temp)
+    ))
+    d.paths = get_suspect_paths(d, jitter = 0.1)
+    d.emd = compute_emd(d.paths) %>%
+      group_by(agent_type) %>%
+      summarise(mean = mean(emd)) %>%
+      ungroup()
+    gs.suspect = gs.suspect %>%
+      mutate(emd_n = ifelse(w == this_w & temp == this_temp,
+                            d.emd[d.emd$agent_type == 'naive', 'mean', drop = T],
+                            emd_n),
+             emd_s = ifelse(w == this_w & temp == this_temp,
+                            d.emd[d.emd$agent_type == 'sophisticated', 'mean', drop = T],
+                            emd_s))
+  }
+}
+
+gs.suspect %>%
+  arrange(w, temp) %>%
+  datatable(rownames = F)
+```
+
+```{r}
+best_w.suspect.naive = 0.7
+best_temp.suspect.naive = 0.01
+best_w.suspect.sophisticated = 0.7
+best_temp.suspect.sophisticated = 0.05
+
+data.suspect.rsm = import_suspect_model_data(best_w.suspect.naive,
+                                             best_temp.suspect.naive) %>%
+  filter(agent_type == 'naive') %>%
+  rbind(import_suspect_model_data(best_w.suspect.sophisticated,
+                                  best_temp.suspect.sophisticated) %>%
+          filter(agent_type == 'sophisticated'))
+```
+
+### Uniform simulation
+```{r}
+data.suspect.unif = import_suspect_data('uniform/') %>%
+  mutate(agent_type = 'naive') %>%
+  rbind(import_suspect_data('uniform/') %>%
+          mutate(agent_type = 'sophisticated'))
+```
+
+### GPT-4o
+
+```{r}
+data.suspect.gpt = read_csv(str_c(data_dir, 'exp1_suspect/gpt4o/gpt4o.csv'),
+                            show_col_types = F)
+data.suspect.gpt %>%
+  summarise(n = n(),
+            n_response = sum(response_valid),
+            p_response = n_response/n,
+            n_path = sum(path_valid),
+            p_path = n_path/n)
+
+data.suspect.gpt = data.suspect.gpt %>%
+  filter(path_valid) %>%
+  mutate(is_return = (path_type == 2),
+         path = gsub(" ", "", path)) %>%
+  select(id=query, trial, agent_type, agent, path, is_return)
+```
+
+### Combined
+
+```{r}
+data.suspect = combine_suspect_data(list(
+  'human' = data.suspect.human,
+  'unif' = data.suspect.unif,
+  'rsm' = data.suspect.rsm,
+  'gpt4o' = data.suspect.gpt
+))
+data.suspect.paths = get_suspect_paths(data.suspect, 0.1)
+data.suspect.emd = compute_emd(data.suspect.paths)
+```
+
+## Analysis
+
+### Path length
+```{r}
+fit.suspect.path_len.human = brm(
+  formula = path_len ~ 1 + agent_type + (1 | id) + (1 | trial),
+  data = data.suspect %>%
+    filter(model == 'human'),
+  iter = 2000,
+  seed = 1,
+  file = 'cache/fit.suspect.path_len.human'
+)
+
+summary(fit.suspect.path_len.human)
+```
+
+```{r}
+fit.suspect.path_len.rsm = brm(
+  formula = path_len ~ 1 + agent_type + (1 | trial),
+  data = data.suspect %>%
+    filter(model == 'sim'),
+  iter = 2000,
+  seed = 1,
+  file = 'cache/fit.suspect.path_len.rsm'
+)
+
+summary(fit.suspect.path_len.rsm)
+```
+
+```{r}
+fit.suspect.path_len.gpt = brm(
+  formula = path_len ~ 1 + agent_type + (1 | trial),
+  data = data.suspect %>%
+    filter(model == 'gpt4o'),
+  iter = 2000,
+  seed = 1,
+  file = 'cache/fit.suspect.path_len.gpt4o'
+)
+
+summary(fit.suspect.path_len.gpt)
+```
+
+### EMD comparison
+```{r}
+data.suspect.emd %>%
+  group_by(model, agent_type) %>%
+  summarise(mean = mean(emd, na.rm = T),
+            low = smean.cl.boot(emd)[2],
+            high = smean.cl.boot(emd)[3])
+
+fit.suspect.emd = brm(
+  formula = emd ~ 1 + agent_type + model,
+  data = data.suspect.emd,
+  iter = 2000,
+  seed = 1,
+  file = 'cache/fit.suspect.emd'
+)
+
+summary(fit.suspect.emd)
+```
+
+```{r}
+fit.suspect.emd %>%
+  emmeans(pairwise ~ model)
+```
+
+## Figures
+
+### Path length
+```{r fig.width = 5, fig.height = 2}
+ggplot(data = data.suspect %>%
+         mutate(model = factor(model,
+                               levels = names(model_labels))) %>%
+         group_by(model, trial, agent_type, path_type) %>%
+         summarise(path_len = mean(path_len)),
+       mapping = aes(x = agent_type,
+                     y = path_len,
+                     fill = agent_type,
+                     group = path_type,
+                     alpha = path_type)) +
+  stat_summary(fun = "mean",
+               geom = "bar",
+               color = "black",
+               linewidth = 0.1,
+               position = position_dodge(width=dodge_width)) +
+  geom_point(size = 2,
+             shape = 21,
+             color = 'gray40',
+             alpha = 0.3,
+             position = position_jitterdodge(dodge.width=dodge_width),
+             show.legend = F) +
+  stat_summary(fun.data = mean_cl_boot,
+               geom = "linerange",
+               color = "black",
+               alpha = 1,
+               linewidth = 1,
+               position = position_dodge(width=dodge_width),
+               show.legend = F) +
+  scale_alpha_manual(values = path_type_alphas) +
+  scale_y_continuous(name = 'Path length',
+                     breaks = seq(0, 30, 10),
+                     expand = expansion(mult = 0.01)) +
+  scale_fill_manual(values = agent_type_colors) +
+  coord_cartesian(clip = "off",
+                  ylim = c(0, 33)) +
+  facet_wrap(~ model,
+             nrow = 1,
+             strip.position = 'bottom',
+             labeller = as_labeller(model_labels)) +
+  theme(text = element_text(size = 12),
+        legend.position = c(0.5, 0.97),
+        legend.box = 'horizontal',
+        legend.direction = 'horizontal',
+        legend.text = element_text(size = 10),
+        legend.title = element_blank(),
+        legend.key.size = unit(8, "pt"),
+        legend.margin = margin(0),
+        axis.title.y = element_text(size = 12),
+        axis.title.x = element_blank(),
+        axis.text.x = element_blank(),
+        axis.line.x = element_blank(),
+        axis.ticks.x = element_blank(),
+        plot.margin = margin(t = 0.1, r = 0, l = 0.1, b = -0.1, unit = 'cm'),
+        strip.text = element_text(size = 12),
+        strip.background = element_blank(),
+        panel.grid.major.y = element_line())
+
+# ggsave(str_c(figures_dir, 'suspect_path_len.pdf'), width = 5, height = 2)
+```
+
+### Path traces
+```{r fig.width = 13, fig.height = 8}
+path_map = function(data, images_data, title, kitchen_access) {
+  g = ggplot(data = data,
+         mapping = aes(x = xx,
+                       y = yy,
+                       color = agent_type,
+                       group = id)) +
+    geom_custom(data = images_data,
+                mapping = aes(data = grob,
+                              x = -Inf, y = -Inf,
+                              color = NULL, group = NULL),
+                grob_fun = function(x) rasterGrob(x,
+                                                  interpolate = T,
+                                                  hjust = 0,
+                                                  vjust = 0)) +
+    annotate('rect',
+             xmin = kitchen_access[1], xmax = kitchen_access[1] + 1,
+             ymin = kitchen_access[2] - 1, ymax = kitchen_access[2],
+             fill = 'green',
+             alpha = 0.5) +
+    geom_path(alpha = 0.2, linewidth = 0.2) +
+    geom_point(alpha = 0.2, size = 0.5) +
+    coord_fixed() +
+    facet_wrap(~ agent_type, nrow = 1) +
+    scale_x_continuous(limits = c(0, 15), expand = c(0, 0)) +
+    scale_y_continuous(limits = c(0, 16), expand = c(0, 0)) +
+    scale_color_manual(values = agent_type_colors) +
+    ggtitle(title) +
+    guides(color = guide_legend(override.aes = list(size = 2,
+                                                    linewidth = 1,
+                                                    alpha = 1))) +
+    theme(plot.title = element_text(size = 16, hjust = 0.5),
+          text = element_text(size = 16),
+          legend.direction = 'horizontal',
+          legend.title = element_blank(),
+          legend.text = element_text(size = 14),
+          axis.text = element_blank(),
+          axis.ticks = element_blank(),
+          axis.title = element_blank(),
+          axis.line = element_blank(),
+          strip.background = element_blank(),
+          strip.text = element_blank(),
+          plot.margin = margin(t = 0.1, r = 0, b = 0.1, l = 0, unit = 'cm'))
+  
+  return(g)
+}
+```
+
+```{r fig.width = 14, fig.height = 2.5}
+select_trial = 'snack2'
+select_agent = 'A'
+kitchen_access = c(5, 12)
+path_map.human = path_map(
+  data.suspect.paths %>%
+    filter(trial == select_trial, model == 'human',
+           agent == select_agent, path_type == 'return path'),
+  images.suspect %>%
+   filter(trial == select_trial),
+  'Humans',
+  kitchen_access
+)
+path_map.sim = path_map(
+  data.suspect.paths %>%
+    filter(trial == select_trial, model == 'rsm',
+           agent == select_agent, path_type == 'return path'),
+  images.suspect %>%
+    filter(trial == select_trial),
+  'RSM',
+  kitchen_access
+)
+path_map.gpt = path_map(
+  data.suspect.paths %>%
+    filter(trial == select_trial, model == 'gpt4o',
+           agent == select_agent, path_type == 'return path'),
+  images.suspect %>%
+    filter(trial == select_trial),
+  'GPT-4o',
+  kitchen_access
+)
+path_map.unif = path_map(
+  data.suspect.paths %>%
+    filter(trial == select_trial, model == 'unif',
+           agent == select_agent, path_type == 'return path'),
+  images.suspect %>%
+    filter(trial == select_trial),
+  'Uniform simulation',
+  kitchen_access
+)
+
+path_map.human + path_map.sim + path_map.gpt + path_map.unif +
+  plot_layout(guides = 'collect', nrow = 1) &
+  theme(legend.position = 'bottom',
+        legend.margin = margin(t = -0.5, b = 0, unit = 'cm'),
+        )
+
+# ggsave(str_c(figures_dir, 'suspect_paths.pdf'), width = 14, height = 2.5)
+```
+
+### EMD
+```{r fig.width = 5, fig.height = 2.25}
+ggplot(data.suspect.emd %>%
+         mutate(model = factor(model, levels = names(model_labels))),
+       aes(x = model,
+           y = emd,
+           fill = agent_type)) +
+  stat_summary(fun = "mean",
+               geom = "bar",
+               color = "black",
+               linewidth = 0.1,
+               alpha = 0.8,
+               position = position_dodge(width=dodge_width)) +
+  geom_point(size = 2,
+             shape = 21,
+             color = 'gray40',
+             alpha = 0.3,
+             position = position_jitterdodge(jitter.width = 0.2,
+                                             dodge.width = dodge_width),
+             show.legend = F) +
+  stat_summary(fun.data = mean_cl_boot,
+               geom = "linerange",
+               color = "black",
+               alpha = 1,
+               linewidth = 1,
+               position = position_dodge(width=dodge_width),
+               show.legend = F) +
+  scale_fill_manual(values = agent_type_colors) +
+  scale_y_continuous(name = "Earth Mover's Distance",
+                     breaks = seq(0, 3, 0.5),
+                     expand = expansion(mult = 0.01)) +
+  coord_cartesian(clip = "off",
+                  ylim = c(0, 3.4)) +
+  scale_x_discrete(labels = model_labels) +
+  theme(text = element_text(size = 12),
+        legend.position = c(0.5, 0.97),
+        legend.direction = 'horizontal',
+        legend.text = element_text(size = 10),
+        legend.title = element_blank(),
+        legend.key.size = unit(8, "pt"),
+        axis.title.y = element_text(size = 12),
+        axis.text.x = element_text(size = 10),
+        axis.title.x = element_blank(),
+        axis.line.x = element_blank(),
+        axis.ticks.x = element_blank(),
+        plot.margin = margin(t = 0.1, r = -0.2, l = 0.1, b = 0.1, unit = 'cm'),
+        panel.grid.major.y = element_line())
+
+# ggsave(str_c(figures_dir, 'suspect_emd.pdf'), width = 5, height = 2.25)
+```
+
+# Experiment 2 (Detective)
+
+## Data
+```{r include = F}
+import_detective_model_data = function(w, temp) {
+  data = read_csv(str_c(data_dir, 'exp2_detective/rsm/w',
+                        w, '_temp', temp, '.csv'),
+                  show_col_types = F) %>%
+    mutate(id = NA)
+  return(data)
+}
+
+combine_detective_data = function(dataframes) {
+  data = data.frame()
+  for (df in names(dataframes)) {
+    data = data %>%
+      rbind(dataframes[[df]] %>%
+              select(id, trial, agent_type, response) %>%
+              mutate(model = df))
+  }
+  data = data %>%
+    mutate(agent_type = factor(agent_type, levels = agent_types),
+           trial = factor(trial))
+  return(data)
+}
+
+compute_detective_means = function(detective_data) {
+  data = detective_data %>%
+    group_by(model, trial, agent_type) %>%
+    summarise(mean = mean(response),
+              low = smean.cl.boot(response)[2],
+              high = smean.cl.boot(response)[3]) %>%
+    ungroup() %>%
+    pivot_wider(names_from = 'model',
+               values_from = c('mean', 'low', 'high'))
+  return(data)
+}
+```
+
+### Human
+```{r}
+data.detective.human = read_csv(str_c(data_dir, 'exp2_detective/humans/human_trials.csv'),
+                                show_col_types = F)
+
+data.detective.feedback = read_csv(str_c(data_dir, 'exp2_detective/humans/human_feedback.csv'),
+                                show_col_types = F)
+
+data.detective.feedback %>%
+  select(id, agent_type, prediction_factors) %>%
+  datatable(rownames = F)
+```
+
+Demographics:
+```{r}
+print_demographics(data.detective.feedback)
+```
+
+### RSM
+
+Grid search:
+```{r echo = F}
+w_values = seq(0.1, 0.8, 0.1)
+temp_values = c(0.01, 0.03, 0.05, 0.08, 0.1, 0.12, 0.15, 0.2)
+gs.detective = expand.grid(w = w_values,
+                           temp = temp_values,
+                           r_n = NA,
+                           rmse_n = NA,
+                           r_s = NA,
+                           rmse_s = NA)
+
+for (this_w in w_values) {
+  for (this_temp in temp_values) {
+    if (!file.exists(str_c(data_dir, 'exp2_detective/rsm/w',
+                           this_w, '_temp', this_temp, '.csv'))) {
+      gs.detective = gs.detective %>%
+        filter(!(w == this_w & temp == this_temp))
+      next
+    }
+    d = combine_detective_data(list(
+      'human' = data.detective.human,
+      'rsm' = import_detective_model_data(this_w, this_temp)
+    ))
+    d.means = compute_detective_means(d)
+    d.means.n = d.means %>% filter(agent_type == 'naive')
+    d.means.s = d.means %>% filter(agent_type == 'sophisticated')
+    gs.detective = gs.detective %>%
+      mutate(r_n = ifelse(w == this_w & temp == this_temp,
+                          cor(d.means.n$mean_human, d.means.n$mean_rsm,
+                              use = 'complete.obs'),
+                          r_n),
+             rmse_n = ifelse(w == this_w & temp == this_temp,
+                             rmse2(d.means.n$mean_human, d.means.n$mean_rsm),
+                             rmse_n),
+             r_s = ifelse(w == this_w & temp == this_temp,
+                          cor(d.means.s$mean_human, d.means.s$mean_rsm,
+                              use = 'complete.obs'),
+                          r_s),
+             rmse_s = ifelse(w == this_w & temp == this_temp,
+                             rmse2(d.means.s$mean_human, d.means.s$mean_rsm),
+                             rmse_s)
+      )
+  }
+}
+
+gs.detective %>%
+  arrange(w, temp) %>%
+  datatable(rownames = F)
+```
+
+```{r}
+best_w.detective.naive = 0.8
+best_temp.detective.naive = 0.05
+best_w.detective.sophisticated = 0.5
+best_temp.detective.sophisticated = 0.2
+
+data.detective.rsm = import_detective_model_data(best_w.detective.naive,
+                                                 best_temp.detective.naive) %>%
+  filter(agent_type == 'naive') %>%
+  rbind(import_detective_model_data(best_w.detective.sophisticated,
+                                    best_temp.detective.sophisticated) %>%
+          filter(agent_type == 'sophisticated'))
+```
+
+### Uniform simulation
+```{r}
+data.detective.unif = read_csv(str_c(data_dir, 'exp2_detective/uniform/uniform_model.csv'),
+                             show_col_types = F) %>%
+  mutate(agent_type = 'naive') %>%
+  rbind(read_csv(str_c(data_dir, 'exp2_detective/uniform/uniform_model.csv'),
+                 show_col_types = F) %>%
+          mutate(agent_type = 'sophisticated')) %>%
+  select(-grid, -crumb) %>%
+  mutate(id = NA)
+```
+
+### Empirical model
+```{r}
+data.detective.emp = read_csv(str_c(data_dir, 'exp2_detective/',
+                                    'empirical/empirical_model.csv'),
+                              show_col_types = F) %>%
+  select(-grid, -crumb) %>%
+  mutate(id = NA)
+```
+
+### Empirical mismatched model
+```{r}
+data.detective.emp_mis = read_csv(str_c(data_dir, 'exp2_detective/',
+                                        'empirical_mismatched',
+                                        '/empirical_mismatched.csv'),
+                                  show_col_types = F) %>%
+  select(-grid, -crumb) %>%
+  mutate(id = NA)
+```
+
+### GPT-4o
+```{r}
+data.detective.gpt = read_csv(str_c(data_dir, 'exp2_detective/gpt4o/gpt4o.csv'),
+                              show_col_types = F) %>%
+  select(-ends_with('prompt'))
+
+sum(data.detective.gpt$is_valid) / length(data.detective.gpt$is_valid)
+
+data.detective.gpt = data.detective.gpt %>%
+  filter(is_valid) %>%
+  select(id, trial, agent_type, response)
+```
+
+### Heuristic model
+```{r}
+data.detective.heu.modeling = read_csv(str_c(data_dir, 'exp2_detective/',
+                                             'heuristic/features.csv'),
+                                       show_col_types = F)
+
+fit.detective.heu.naive = brm(
+  formula = response ~ 1 + fridge_A + crumb_A + fridge_B + crumb_B + (1 | id) + (1 | trial),
+  data = data.detective.human %>%
+    filter(agent_type == 'naive') %>%
+    left_join(data.detective.heu.modeling,
+              by = c('trial', 'agent_type')),
+  iter = 2000,
+  seed = 1,
+  file = 'cache/fit.detective.heu.naive'
+)
+
+fit.detective.heu.sophisticated = brm(
+  formula = response ~ 1 + fridge_A + crumb_A + fridge_B + crumb_B + (1 | id) + (1 | trial),
+  data = data.detective.human %>%
+    filter(agent_type == 'sophisticated') %>%
+    left_join(data.detective.heu.modeling,
+              by = c('trial', 'agent_type')),
+  iter = 2000,
+  seed = 1,
+  file = 'cache/fit.detective.heu.sophisticated'
+)
+
+data.detective.heu = data.detective.human %>%
+  filter(agent_type == 'naive') %>%
+  cbind(fit.detective.heu.naive %>%
+          fitted(newdata = data.detective.human %>%
+                   filter(agent_type == 'naive') %>%
+                   left_join(data.detective.heu.modeling,
+                             by = c('trial', 'agent_type')),
+                 re_formula = NA) %>%
+          as_tibble() %>%
+          select(pred = Estimate)) %>%
+  distinct(trial, pred) %>%
+  mutate(agent_type = 'naive') %>%
+  rbind(data.detective.human %>%
+          filter(agent_type == 'sophisticated') %>%
+          cbind(fit.detective.heu.sophisticated %>%
+                  fitted(newdata = data.detective.human %>%
+                           filter(agent_type == 'sophisticated') %>%
+                           left_join(data.detective.heu.modeling,
+                                     by = c('trial', 'agent_type')),
+                         re_formula = NA) %>%
+                  as_tibble() %>%
+                  select(pred = Estimate)) %>%
+          distinct(trial, pred) %>%
+          mutate(agent_type = 'sophisticated')) %>%
+  rename(response = pred) %>%
+  mutate(id = NA)
+```
+
+### Combined
+```{r}
+data.detective = combine_detective_data(list(
+  'human' = data.detective.human,
+  'unif' = data.detective.unif,
+  'rsm' = data.detective.rsm,
+  'emp' = data.detective.emp,
+  'emp_mis' = data.detective.emp_mis,
+  'gpt4o' = data.detective.gpt,
+  'heu' = data.detective.heu
+))
+
+data.detective.means = compute_detective_means(data.detective)
+```
+
+## Analysis
+
+### Uncertainty
+```{r}
+fit.detective.human = brm(
+  formula = abs_response ~ 1 + agent_type + (1 | id) + (1 | trial),
+  data = data.detective %>%
+    filter(model == 'human') %>%
+    mutate(abs_response = abs(response)),
+  iter = 2000,
+  seed = 1,
+  file = 'cache/fit.detective.human'
+)
+
+summary(fit.detective.human)
+```
+
+### Model fit comparison
+```{r}
+# removed one trial because it's NA for GPT 
+n_trials = data.detective.means %>% 
+  pull(trial) %>% 
+  as.character() %>% 
+  as.numeric() %>% 
+  max() - 1
+
+data.detective.means %>% 
+  select(trial, agent_type, contains("mean"))  %>%
+  na.omit() %>%
+  mutate(residuals_rsm = mean_human - mean_rsm,
+         residuals_emp = mean_human - mean_emp,
+         residuals_emp_mis = mean_human - mean_emp_mis,
+         residuals_gpt4o = mean_human - mean_gpt4o,
+         residuals_unif = mean_human - mean_unif,
+         residuals_heu = mean_human - mean_heu) %>% 
+  select(trial, agent_type, contains("residuals")) %>% 
+  pivot_longer(cols = -c(trial, agent_type)) %>% 
+  group_by(agent_type, name) %>%
+  nest() %>% 
+  mutate(log_likelihood = map_dbl(.x = data,
+                                  .f = ~ .x %>% 
+                                na.omit() %>% 
+                                pull(value) %>% 
+                                fitdistr(densfun = "normal") %>% 
+                                .[["loglik"]])) %>% 
+  ungroup() %>%
+  mutate(n_parameters = case_when(name == "residuals_rsm" ~ 2,
+                                  name == "residuals_heu" ~ 5,
+                                  TRUE ~ 0),
+         AIC = -2 * log_likelihood + 2 * n_parameters,
+         AIC = format(round(AIC, 2), nsmall = 2)) %>%
+  select(agent_type, name, AIC) %>% 
+  mutate(name = factor(name,
+                       levels = str_c("residuals_",
+                                      c("rsm", "emp", "emp_mis",
+                                        "gpt4o", "unif", "heu")),
+                       labels = model_labels[-1])) %>%
+  pivot_wider(names_from = agent_type,
+              values_from = AIC)
+```
+
+## Figures
+
+```{r}
+detective.scatterplot = function(data, model, x_title = F, y_title = '', tagg = '') {
+  r = cor(data[[str_c('mean_', model)]],
+          data[['mean_human']],
+          use = 'complete.obs') %>% round(2)
+  rmse = rmse2(data[[str_c('mean_', model)]], data[['mean_human']]) %>% round(2)
+  
+  g = ggplot(data = data,
+         aes(x = get(str_c('mean_', model)),
+             y = mean_human,
+             fill = agent_type)) +
+    geom_abline(intercept = 0, slope = 1,
+                linetype = 2, linewidth = 0.5) +
+    # error bars
+    geom_linerange(size = 0.5,
+                   mapping = aes(ymin = low_human,
+                                 ymax = high_human),
+                   color = 'gray50',
+                   alpha = 0.4) +
+    geom_errorbarh(mapping = aes(xmin = get(str_c('low_', model)),
+                                 xmax = get(str_c('high_', model))),
+                   color = 'gray50',
+                   alpha = 0.4,
+                   height = 0) +
+    # means
+    geom_point(shape = 21,
+               size = 2) +
+    geom_text(label = sprintf('RMSE = %.2f\nr = %s', rmse, r),
+              hjust = 0,   # left align
+              x = -50, y = 50,
+              size = 4, check_overlap = T) +
+    scale_fill_manual(values = agent_type_colors) +
+    scale_x_continuous(name = ifelse(x_title, model_labels[model], ''),
+                       limits = c(-50, 50)) +
+    scale_y_continuous(name = y_title,
+                       limits = c(-50, 55),
+                       breaks = seq(-50, 50, 25)) +
+    coord_cartesian(clip = 'off') +
+    labs(tag = tagg) +
+    theme(legend.position = 'bottom',
+          legend.title = element_blank(),
+          legend.text = element_text(size = 12),
+          axis.title.x = element_text(size = 12),
+          axis.title.y = element_text(size = 12),
+          aspect.ratio = 1
+          )
+  
+  return (g)
+}
+```
+
+```{r fig.width = 13, fig.height = 4.75, warning = F}
+scatter.n1 = detective.scatterplot(
+  data.detective.means %>%
+    filter(agent_type == 'naive'),
+  model = 'rsm',
+  y_title = 'Naive humans',
+  tagg = 'A'
+)
+
+scatter.n2 = detective.scatterplot(
+  data.detective.means %>%
+    filter(agent_type == 'naive'),
+  model = 'emp',
+  tagg = 'B'
+)
+
+scatter.n3 = detective.scatterplot(
+  data.detective.means %>%
+    filter(agent_type == 'naive'),
+  model = 'emp_mis',
+  tagg = 'C'
+)
+
+scatter.n4 = detective.scatterplot(
+  data.detective.means %>%
+    filter(agent_type == 'naive'),
+  model = 'gpt4o',
+  tagg = 'D'
+)
+
+scatter.n5 = detective.scatterplot(
+  data.detective.means %>%
+    filter(agent_type == 'naive'),
+  model = 'unif',
+  tagg = 'E'
+)
+
+scatter.n6 = detective.scatterplot(
+  data.detective.means %>%
+    filter(agent_type == 'naive'),
+  model = 'heu',
+  tagg = 'F'
+)
+
+scatter.s1 = detective.scatterplot(
+  data.detective.means %>%
+    filter(agent_type == 'sophisticated'),
+  model = 'rsm',
+  x_title = T,
+  y_title = 'Sophisticated humans'
+)
+
+scatter.s2 = detective.scatterplot(
+  data.detective.means %>%
+    filter(agent_type == 'sophisticated'),
+  model = 'emp',
+  x_title = T
+)
+
+scatter.s3 = detective.scatterplot(
+  data.detective.means %>%
+    filter(agent_type == 'sophisticated'),
+  model = 'emp_mis',
+  x_title = T
+)
+
+scatter.s4 = detective.scatterplot(
+  data.detective.means %>%
+    filter(agent_type == 'sophisticated'),
+  model = 'gpt4o',
+  x_title = T
+)
+
+scatter.s5 = detective.scatterplot(
+  data.detective.means %>%
+    filter(agent_type == 'sophisticated'),
+  model = 'unif',
+  x_title = T
+)
+
+scatter.s6 = detective.scatterplot(
+  data.detective.means %>%
+    filter(agent_type == 'sophisticated'),
+  model = 'heu',
+  x_title = T
+)
+
+scatter.n1 + scatter.n2 + scatter.n3 + scatter.n4 + scatter.n5 + scatter.n6 + scatter.s1 + scatter.s2 + scatter.s3 + scatter.s4 + scatter.s5 + scatter.s6 +
+  plot_layout(guides = 'collect',
+              ncol = 6) &
+  theme(legend.position = 'bottom',
+        legend.direction = 'horizontal',
+        legend.title = element_blank(),
+        legend.spacing.y = unit(0, 'cm'),
+        legend.spacing.x = unit(0, 'cm'),
+        legend.margin = margin(t = 0, b = 0, unit = 'cm'),
+        plot.tag.position = c(0.1, 1.05),
+        plot.margin = margin(t = 0.1, r = 0.1, b = -0.1, l = 0.1, unit = 'cm')
+        )
+
+# ggsave(str_c(figures_dir, 'detective.pdf'), width = 13, height = 4.75)
+```
+
+# Session info
+```{r}
+sessionInfo()
+```
+
+

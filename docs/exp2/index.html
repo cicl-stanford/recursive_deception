@@ -1,0 +1,1531 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Detective Experiment</title>
+    <link rel="icon" type="image/x-icon" href="../favicon.png">
+    <link rel="stylesheet" href='../css/jspsych.css' />
+    <link rel="stylesheet" href='../css/jquery-ui-edit.css' />
+    <link rel="stylesheet" href='../css/jquery-ui-slider-pips-edit.css' />
+    <link rel="stylesheet" href='../css/utils.css' />
+    <link rel="stylesheet" href='../css/animations.css' />
+
+    <script src='../js/jspsych.js'></script>
+    <script src='../js/jquery.min.js'></script>
+    <script src='../js/jquery-ui.min.js'></script>
+    <script src='../js/jquery-ui-slider-pips.js'></script>
+    <script src='../js/timeme.min.js'></script>
+    <script src='../js/furniture-config.js'></script>
+    <script src='../js/trial-loader-detective.js'></script>
+    <script src='../js/plugin-html-judgment-response.js'></script>
+    <script src='../js/plugin-marple-path-drawing.js'></script>
+    <script src='../js/plugin-html-button-response.js'></script>
+    <script src='../js/plugin-html-slider-response.js'></script>
+    <script src='../js/plugin-survey-html-form.js'></script>
+    <script src='../js/plugin-survey-multi-choice.js'></script>
+    <script src='../js/plugin-preload.js'></script>
+    <script src='../js/plugin-marple-instructions.js'></script>
+    <script src='../js/utils.js'></script>
+    <script src='../js/consent.js'></script>
+    <script src='../instructions/detective_naive_text.js'></script>
+    <script src='../js/demographic_form_exp2.js'></script>
+    <script src="https://unpkg.com/@jspsych-contrib/plugin-pipe"></script>
+
+    <script>
+        var jsPsychModule = {
+            ParameterType: {
+                STRING: 1,
+                BOOL: 2,
+                INT: 3,
+                FLOAT: 4,
+                ARRAY: 5,
+                OBJECT: 6
+            }
+        };
+    </script>
+
+    <style>
+        .trial-container {
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: center;
+            height: 4vh;
+            margin: 0;
+            padding: 0;
+            font-family: 'Open Sans', 'Arial', sans-serif;
+            font-size: 18px;
+            line-height: 1em;
+        }
+        .trial-header {
+            font-family: 'Open Sans', 'Arial', sans-serif;
+            font-weight: bold;
+            font-size: 22px;
+            margin: -20px 10px;
+            line-height: 1em;
+        }
+        .trial-prompt {
+            font-family: 'Open Sans', 'Arial', sans-serif;
+            font-size: 18px;
+            margin: 50px 40px 20px 40px;
+            line-height: 1em;
+        }
+        .marple-path-drawing {
+            margin-top: 0px;
+            font-family: 'Open Sans', 'Arial', sans-serif;
+            font-size: 18px;
+            line-height: 1em;
+        }
+        .scene-container {
+            display: flex;
+            justify-content: center;
+            gap: 4em;
+            margin: 1em 0;
+        }
+        .scene {
+            text-align: center;
+        }
+        .scene-img {
+            max-width: 350px;
+            border: 0px solid #ccc;
+        }
+        .slider-container {
+            width: 80%;
+            margin: 2em auto;
+        }
+        .jspsych-btn:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+        .required {
+            color: red;
+        }
+        .ui-slider-pips .ui-slider-pip {
+            pointer-events: none;
+        }
+        .ui-slider-pips .ui-slider-label {
+            pointer-events: none;
+        }
+        .ui-slider-pips .ui-slider-line {
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="jspsych-display-element"></div>
+    <h3 id="trial-header" style="text-align: center;"></h3>
+<script>
+
+    // randomize condition
+    let condition =  Math.floor(Math.random() * 2);  // random condition (0 or 1)
+
+    async function getCondition() {
+        // condition = await jsPsychPipe.getCondition("wWfWoGU9OLns");
+        console.log('Condition:', condition);
+
+        if (condition == 0) {
+            agent_type = "naive";
+        } else {
+            agent_type = "sophisticated";
+        }
+
+        if (condition == 0) {
+            let naiveScript = document.querySelector('script[src="../instructions/detective_naive_text.js"]');
+            
+            if (naiveScript) {
+                if (window.instruction_pages_suspect && window.instruction_pages_detective) {
+                    initializeExperiment();
+                } else {
+                    naiveScript.onload = function() {
+                        initializeExperiment();
+                    };
+                }
+            } else {
+                naiveScript = document.createElement('script');
+                naiveScript.src = '../instructions/detective_naive_text.js';
+                naiveScript.onload = function() {
+                    initializeExperiment();
+                };
+                document.head.appendChild(naiveScript);
+            }
+        } else {
+            if (document.querySelector('script[src="../instructions/detective_naive_text.js"]')) {
+                document.querySelector('script[src="../instructions/detective_naive_text.js"]').remove();
+            }
+            let script = document.createElement('script');
+            script.src = '../instructions/detective_soph_text.js';
+            script.onload = function() {
+                initializeExperiment();
+            };
+            document.head.appendChild(script);
+        }
+    }
+    getCondition();
+
+    const num_trials = 27;
+    const trial_order = generate_trial_order(num_trials);
+
+    TimeMe.initialize({
+        currentPageName: 'page',
+        idleTimeoutInSeconds: 30
+    });
+
+    let trial_data;
+    let slider_response_data;
+    let final_trial_data;
+    let trial_idx = 0;
+    
+    async function loadTrialDataA(trialName) {
+        try {
+            const response = await fetch(`trials/json/${trialName}.json`);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const data = await response.json();
+
+            let all_furniture_locations = [];
+            data.Grid.rooms.initial.forEach(room => {
+                room.furnitures.initial.forEach(furniture => {
+                    let furniture_tiles = [];
+                    
+                    switch (furniture.type) {
+                        case 'table':
+                        case 'sofa':
+                        case 'bed':
+                            furniture_tiles = [
+                                [furniture.pos[0], furniture.pos[1]],
+                                [furniture.pos[0] + 1, furniture.pos[1]],
+                                [furniture.pos[0] + 2, furniture.pos[1]],
+                                [furniture.pos[0], furniture.pos[1] + 1],
+                                [furniture.pos[0] + 1, furniture.pos[1] + 1],
+                                [furniture.pos[0] + 2, furniture.pos[1] + 1]
+                            ];
+                            break;
+                        case 'electric_refrigerator':
+                            furniture_tiles = [
+                                [furniture.pos[0], furniture.pos[1]],
+                                [furniture.pos[0] + 1, furniture.pos[1]],
+                                [furniture.pos[0], furniture.pos[1] + 1],
+                                [furniture.pos[0] + 1, furniture.pos[1] + 1],
+                                [furniture.pos[0], furniture.pos[1] + 2],
+                                [furniture.pos[0] + 1, furniture.pos[1] + 2]
+                            ];
+                            break;
+                        case 'light':
+                            furniture_tiles = [
+                                [furniture.pos[0], furniture.pos[1]],
+                                [furniture.pos[0], furniture.pos[1] + 1]
+                            ];
+                            break;
+                        default:
+                            furniture_tiles = [[furniture.pos[0], furniture.pos[1]]];
+                    }
+                    
+                    all_furniture_locations.push({
+                        type: furniture.type,
+                        tiles: furniture_tiles
+                    });
+                });
+            });
+
+            return {
+                grid_width: data.Grid.width,
+                grid_height: data.Grid.height,
+                agent_location: data.Grid.agents.initial[0].pos,
+                agent_name: data.Grid.agents.initial[0].name,
+                agent_id: data.Grid.agents.initial[0].id,
+                rooms: data.Grid.rooms.initial.map(room => ({
+                    type: room.type,
+                    top: room.top,
+                    size: room.size,
+                    furnitures: room.furnitures.initial
+                })),
+                fridge_location: data.Grid.rooms.initial.find(room => room.type === "Kitchen").furnitures.initial.find(f => f.type === "electric_refrigerator").pos,
+                fridge_full_location: [
+                    [data.Grid.rooms.initial.find(room => room.type === "Kitchen").furnitures.initial.find(f => f.type === "electric_refrigerator").pos[0], data.Grid.rooms.initial.find(room => room.type === "Kitchen").furnitures.initial.find(f => f.type === "electric_refrigerator").pos[1]],
+                    [data.Grid.rooms.initial.find(room => room.type === "Kitchen").furnitures.initial.find(f => f.type === "electric_refrigerator").pos[0] + 1, data.Grid.rooms.initial.find(room => room.type === "Kitchen").furnitures.initial.find(f => f.type === "electric_refrigerator").pos[1]],
+                    [data.Grid.rooms.initial.find(room => room.type === "Kitchen").furnitures.initial.find(f => f.type === "electric_refrigerator").pos[0], data.Grid.rooms.initial.find(room => room.type === "Kitchen").furnitures.initial.find(f => f.type === "electric_refrigerator").pos[1] + 1],
+                    [data.Grid.rooms.initial.find(room => room.type === "Kitchen").furnitures.initial.find(f => f.type === "electric_refrigerator").pos[0] + 1, data.Grid.rooms.initial.find(room => room.type === "Kitchen").furnitures.initial.find(f => f.type === "electric_refrigerator").pos[1] + 1],
+                    [data.Grid.rooms.initial.find(room => room.type === "Kitchen").furnitures.initial.find(f => f.type === "electric_refrigerator").pos[0], data.Grid.rooms.initial.find(room => room.type === "Kitchen").furnitures.initial.find(f => f.type === "electric_refrigerator").pos[1] + 2],
+                    [data.Grid.rooms.initial.find(room => room.type === "Kitchen").furnitures.initial.find(f => f.type === "electric_refrigerator").pos[0] + 1, data.Grid.rooms.initial.find(room => room.type === "Kitchen").furnitures.initial.find(f => f.type === "electric_refrigerator").pos[1] + 2]
+                ],
+                fridge_access_point: [data.Grid.rooms.initial.find(room => room.type === "Kitchen").furnitures.initial.find(f => f.type === "electric_refrigerator").pos[0] - 1, data.Grid.rooms.initial.find(room => room.type === "Kitchen").furnitures.initial.find(f => f.type === "electric_refrigerator").pos[1] + 2],
+                doors: data.Grid.doors.initial.map(door => door.pos),
+                agent_door_pos: data.Grid.doors.initial.reduce((closest, door) => {
+                    const agentPos = data.Grid.agents.initial[0].pos;
+                    const dist = Math.abs(door.pos[0] - agentPos[0]) + Math.abs(door.pos[1] - agentPos[1]);
+                    if (!closest || dist < closest.dist) {
+                        return { pos: door.pos, dist };
+                    }
+                    return closest;
+                }, null).pos,
+                other_agent_door_pos: data.Grid.doors.initial.reduce((closest, door) => {
+                    const agentPos = data.Grid.agents.initial[1].pos;
+                    const dist = Math.abs(door.pos[0] - agentPos[0]) + Math.abs(door.pos[1] - agentPos[1]);
+                    if (!closest || dist < closest.dist) {
+                        return { pos: door.pos, dist };
+                    }
+                    return closest;
+                }, null).pos,
+                furniture_locations: all_furniture_locations,
+                initial_pos: data.Grid.agents.initial[0].initial_pos
+            };
+        } catch (error) {
+            console.error('Error loading trial data:', error);
+            return null;
+        }
+    }
+
+    async function loadTrialDataB(trialName) {
+        try {
+            const response = await fetch(`trials/json/${trialName}.json`);
+            const data = await response.json();
+
+            const all_furniture_locations = [];
+            data.Grid.rooms.initial.forEach(room => {
+                room.furnitures.initial.forEach(furniture => {
+                    let furniture_tiles = [];
+                    
+                    switch (furniture.type) {
+                        case 'table':
+                        case 'sofa':
+                        case 'bed':
+                            furniture_tiles = [
+                                [furniture.pos[0], furniture.pos[1]],
+                                [furniture.pos[0] + 1, furniture.pos[1]],
+                                [furniture.pos[0] + 2, furniture.pos[1]],
+                                [furniture.pos[0], furniture.pos[1] + 1],
+                                [furniture.pos[0] + 1, furniture.pos[1] + 1],
+                                [furniture.pos[0] + 2, furniture.pos[1] + 1]
+                            ];
+                            break;
+                        case 'electric_refrigerator':
+                            furniture_tiles = [
+                                [furniture.pos[0], furniture.pos[1]],
+                                [furniture.pos[0] + 1, furniture.pos[1]],
+                                [furniture.pos[0], furniture.pos[1] + 1],
+                                [furniture.pos[0] + 1, furniture.pos[1] + 1],
+                                [furniture.pos[0], furniture.pos[1] + 2],
+                                [furniture.pos[0] + 1, furniture.pos[1] + 2]
+                            ];
+                            break;
+                        case 'light':
+                            furniture_tiles = [
+                                [furniture.pos[0], furniture.pos[1]],
+                                [furniture.pos[0], furniture.pos[1] + 1]
+                            ];
+                            break;
+                        default:
+                            furniture_tiles = [[furniture.pos[0], furniture.pos[1]]];
+                    }
+                    
+                    all_furniture_locations.push({
+                        type: furniture.type,
+                        tiles: furniture_tiles
+                    });
+                });
+            });
+
+            return {
+                grid_width: data.Grid.width,
+                grid_height: data.Grid.height,
+                agent_location: data.Grid.agents.initial[1].pos,
+                agent_name: data.Grid.agents.initial[1].name,
+                agent_id: data.Grid.agents.initial[1].id,
+                rooms: data.Grid.rooms.initial.map(room => ({
+                    type: room.type,
+                    top: room.top,
+                    size: room.size,
+                    furnitures: room.furnitures.initial
+                })),
+                fridge_location: data.Grid.rooms.initial.find(room => room.type === "Kitchen").furnitures.initial.find(f => f.type === "electric_refrigerator").pos,
+                fridge_full_location: [
+                    [data.Grid.rooms.initial.find(room => room.type === "Kitchen").furnitures.initial.find(f => f.type === "electric_refrigerator").pos[0], data.Grid.rooms.initial.find(room => room.type === "Kitchen").furnitures.initial.find(f => f.type === "electric_refrigerator").pos[1]],
+                    [data.Grid.rooms.initial.find(room => room.type === "Kitchen").furnitures.initial.find(f => f.type === "electric_refrigerator").pos[0] + 1, data.Grid.rooms.initial.find(room => room.type === "Kitchen").furnitures.initial.find(f => f.type === "electric_refrigerator").pos[1]],
+                    [data.Grid.rooms.initial.find(room => room.type === "Kitchen").furnitures.initial.find(f => f.type === "electric_refrigerator").pos[0], data.Grid.rooms.initial.find(room => room.type === "Kitchen").furnitures.initial.find(f => f.type === "electric_refrigerator").pos[1] + 1],
+                    [data.Grid.rooms.initial.find(room => room.type === "Kitchen").furnitures.initial.find(f => f.type === "electric_refrigerator").pos[0] + 1, data.Grid.rooms.initial.find(room => room.type === "Kitchen").furnitures.initial.find(f => f.type === "electric_refrigerator").pos[1] + 1],
+                    [data.Grid.rooms.initial.find(room => room.type === "Kitchen").furnitures.initial.find(f => f.type === "electric_refrigerator").pos[0], data.Grid.rooms.initial.find(room => room.type === "Kitchen").furnitures.initial.find(f => f.type === "electric_refrigerator").pos[1] + 2],
+                    [data.Grid.rooms.initial.find(room => room.type === "Kitchen").furnitures.initial.find(f => f.type === "electric_refrigerator").pos[0] + 1, data.Grid.rooms.initial.find(room => room.type === "Kitchen").furnitures.initial.find(f => f.type === "electric_refrigerator").pos[1] + 2]
+                ],
+                fridge_access_point: [data.Grid.rooms.initial.find(room => room.type === "Kitchen").furnitures.initial.find(f => f.type === "electric_refrigerator").pos[0] - 1, data.Grid.rooms.initial.find(room => room.type === "Kitchen").furnitures.initial.find(f => f.type === "electric_refrigerator").pos[1] + 2],
+                doors: data.Grid.doors.initial.map(door => door.pos),
+                agent_door_pos: data.Grid.doors.initial.reduce((closest, door) => {
+                    const agentPos = data.Grid.agents.initial[1].pos;
+                    const dist = Math.abs(door.pos[0] - agentPos[0]) + Math.abs(door.pos[1] - agentPos[1]);
+                    if (!closest || dist < closest.dist) {
+                        return { pos: door.pos, dist };
+                    }
+                    return closest;
+                }, null).pos,
+                other_agent_door_pos: data.Grid.doors.initial.reduce((closest, door) => {
+                    const agentPos = data.Grid.agents.initial[0].pos;
+                    const dist = Math.abs(door.pos[0] - agentPos[0]) + Math.abs(door.pos[1] - agentPos[1]);
+                    if (!closest || dist < closest.dist) {
+                        return { pos: door.pos, dist };
+                    }
+                    return closest;
+                }, null).pos,
+                furniture_locations: all_furniture_locations,
+                initial_pos: data.Grid.agents.initial[1].initial_pos
+            };
+        } catch (error) {
+            console.error('Error loading trial data:', error);
+            return null;
+        }
+    }
+
+    function initializeExperiment() {
+        var jsPsych = initJsPsych({
+            show_progress_bar: true,
+            auto_update_progress_bar: false,
+            on_finish: function() {
+                time = TimeMe.getTimeOnPageInSeconds('page');
+                
+                let data = jsPsych.data.get();
+                // console.log('data: ', data);
+                
+                trial_data = data.filter({trial_type: 'html-judgment-response'})
+                                .filter(trial => trial.stimulus && trial.agent_a && trial.agent_b && trial.display_num 
+                                            && trial.original_num !== null
+                                            && trial.agent_a !== undefined 
+                                            && trial.agent_b !== undefined)
+                                .trials;
+                
+                slider_response_data = trial_data.slice(4);
+                final_trial_data = trial_data[trial_data.length - 1];
+
+                let trials = [];
+                for (let trial of slider_response_data) {
+                    if (trial.display_num && trial.original_num && trial.agent_a && trial.agent_b && trial.stimulus) {
+                        trials.push({
+                            'display_num': trial.display_num,
+                            'original_num': trial.original_num,
+                            'agent_a': trial.agent_a,
+                            'agent_b': trial.agent_b,
+                            'agent_type': trial.agent_type,
+                            'trial_idx': trial_idx,
+                            'response': trial.response,
+                            'time_elapsed': trial.time_elapsed
+                        });
+                    }
+                }
+                // Clear the trial data after processing
+                trial_data = [];
+
+                let participant = data.filter({trial_type: 'survey-html-form'}).trials[0].response;
+                participant.time = time;
+                
+                $('#jspsych-content').css('margin-top', '20vh');
+                $('#jspsych-content').html('<div style="margin: auto;"> <p>' +
+                    ' Thank you for participating in this experiment! </p>' +
+                    '<p> Redirecting you back to Prolific ... </p>');
+                setTimeout(function(){}, 200);
+                window.location = "https://app.prolific.com/submissions/complete?cc=CGZRA3ZW";
+            }
+        });
+
+
+        // -----------------------------------------------------
+        // consent, instructions, and comprehension check
+        // -----------------------------------------------------
+
+        let instructions_suspect = {
+            type: marpleInstructions,
+            pages: instruction_pages_suspect,
+            show_clickable_nav: true,
+            on_start: function() { jsPsych.setProgressBar(0.02); },
+            on_finish: function() { jsPsych.setProgressBar(0.08); }
+        }
+
+        function getExampleTrial() {
+            return "snack4";
+        }
+
+        let example_suspect_trials = {
+            timeline: [
+                {
+                    type: marplePathDrawing,
+                    trial: `${getExampleTrial()}_example`,
+                    agent_type: condition == 0 ? "naive" : "sophisticated",
+                    image_path: function() {
+                        return `trials/images/${getExampleTrial()}_A1.png`;
+                    },
+                    prompt: `
+                        <div class="trial-container">
+                            <h3 class="trial-header">Example: Part 1</h3>
+                            <p class="trial-prompt">Practice drawing a path to the fridge.</p>
+                        </div>`,
+                    grid_width: 15,
+                    grid_height: 15,
+                    agent_location: [3, 5],
+                    fridge_location: [8, 11],
+                    fridge_full_location: [],
+                    fridge_access_point: [7, 13],
+                    agent_door_pos: [3, 8],
+                    other_agent_door_pos: [11, 8],
+                    rooms: [],
+                    doors: [],
+                    agent_name: "",
+                    agent_id: "",
+                    furniture_locations: [],
+                    is_return_path: false,
+                    on_start: async function(trial) {
+                        const exampleTrialName = `${getExampleTrial()}_A1`;
+                        const trialData = await loadTrialDataA(exampleTrialName);
+                        if (trialData) {
+                            Object.assign(trial, trialData);
+                        }
+                        jsPsych.setProgressBar(0.08);
+                    },
+                    on_finish: function(data) {
+                        jsPsych.data.addProperties({
+                            example_trial_path: data.selected_tiles,
+                            current_agent: 'A',
+                            trial_sequence: 'to_fridge'
+                        });
+                        jsPsych.setProgressBar(0.10);
+                    }
+                },
+                {
+                    type: jsPsychHtmlButtonResponse,
+                    stimulus: function() {
+                        let baseText = `
+                            <div class="marple-path-drawing" style="text-align: center;">
+                                <div style="line-height: 2em; margin: 100px 100px;">
+                                    <p>
+                                        Nice job! Now, your task is to help the resident get back to their room with the snack.
+                                        <br>
+                                        Click the squares to draw a path from the fridge back to their starting location.
+                                        <br>
+                                        The original path you chose is highlighted in grey for reference, <em>but you don't need to choose the same path.</em>`;
+                        
+                        if (condition == 1) {
+                            baseText += `<br><br>Keep in mind, there's a risk of crumbs spilling anywhere on the resident's path back.`;
+                        }
+                        return baseText;
+                    },
+                    choices: ['Continue'],
+                    is_narrow: true,
+                    on_finish: function() {
+                        jsPsych.setProgressBar(0.10);
+                    }
+                },
+                {
+                    type: marplePathDrawing,
+                    trial: `${getExampleTrial()}_example`,
+                    agent_type: condition == 0 ? "naive" : "sophisticated",
+                    image_path: function() {
+                        return `trials/images/${getExampleTrial()}_A2.png`;
+                    },
+                    prompt: `
+                        <div class="trial-container">
+                            <h3 class="trial-header">Example: Part 2</h3>
+                            <p class="trial-prompt">Now practice drawing a path back to the starting position.</p>
+                        </div>`,
+                    grid_width: 15,
+                    grid_height: 15,
+                    agent_location: [7, 13],
+                    fridge_location: [8, 11],
+                    fridge_full_location: [],
+                    fridge_access_point: [7, 13],
+                    agent_door_pos: [3, 8],
+                    other_agent_door_pos: [11, 8],
+                    rooms: [],
+                    doors: [],
+                    agent_name: "",
+                    agent_id: "",
+                    furniture_locations: [],
+                    is_return_path: true,
+                    on_start: async function(trial) {
+                        const trialData = await loadTrialDataA(`${getExampleTrial()}_A1`);
+                        if (trialData) {
+                            const initialPos = trialData.agent_location;
+                            const returnData = await loadTrialDataA(`${getExampleTrial()}_A2`);
+                            if (returnData) {
+                                Object.assign(trial, returnData);
+                                trial.start_tile = returnData.fridge_access_point;
+                                trial.target_tile = initialPos;
+                                trial.initial_pos = initialPos;
+                            }
+                        }
+                        jsPsych.setProgressBar(0.10);
+                    },
+                    show_previous_path: true,
+                    previous_path: () => {
+                        let previousData = jsPsych.data.get().last(2).values()[0];
+                        if (previousData.current_agent === 'A' && previousData.trial_sequence === 'to_fridge') {
+                            return previousData.selected_tiles || [];
+                        }
+                        return [];
+                    },
+                    on_finish: function(data) {
+                        jsPsych.data.addProperties({
+                            example_trial_path: data.selected_tiles,
+                            current_agent: 'A',
+                            trial_sequence: 'from_fridge'
+                        });
+                        jsPsych.setProgressBar(0.10);
+                    }
+                }
+            ]
+        };
+
+
+        let comprehension_q_suspects = {
+            timeline: [{
+                type: jsPsychSurveyMultiChoice,
+                questions: condition == 0 ? [
+                    {
+                        prompt: comprehension_suspect1,
+                        options: options_suspect1,
+                        horizontal: true,
+                        required: true
+                    },
+                    {
+                        prompt: comprehension_suspect2,
+                        options: options_suspect2,
+                        horizontal: true,
+                        required: true
+                    },
+                    {
+                        prompt: comprehension_suspect3,
+                        options: options_suspect3,
+                        horizontal: true,
+                        required: true
+                    }
+                ] : [
+                    {
+                        prompt: comprehension_suspect1,
+                        options: options_suspect1,
+                        horizontal: true,
+                        required: true
+                    },
+                    {
+                        prompt: comprehension_suspect2,
+                        options: options_suspect2,
+                        horizontal: true,
+                        required: true
+                    },
+                    {
+                        prompt: comprehension_suspect3,
+                        options: options_suspect3,
+                        horizontal: true,
+                        required: true
+                    }
+                ],
+                preamble: 'Please answer the following questions about the instructions.',
+                on_finish: function(data) {
+                    if (condition == 0) {
+                        data.correct = (data.response.Q0 == 'True' && data.response.Q1 == 'False' && data.response.Q2 == 'False');
+                    } else {
+                        data.correct = (data.response.Q0 == 'True' && data.response.Q1 == 'False' && data.response.Q2 == 'False');
+                    }
+                    jsPsych.setProgressBar(0.14);
+                }
+            }]
+        };
+
+        let fail_comprehension_suspects = {
+            timeline: [{
+                type: jsPsychHtmlButtonResponse,
+                stimulus: '<p>Unfortunately, you missed some of the comprehension questions.</p> \
+                            <p>Please review the instructions again.</p>',
+                choices: ['Review'],
+            }],
+            conditional_function: function(){
+                var data = jsPsych.data.get().last(1).trials[0];
+                return !(data.correct);
+            }
+        }
+
+        let instructions_last_suspect = {
+            type: jsPsychHtmlButtonResponse,
+            stimulus: instructions_last_page_suspect,
+            choices: ['Continue'],
+            is_narrow: true,
+            on_finish: function() { jsPsych.setProgressBar(0.12); }
+        }
+
+        let trials_start_suspect = {
+            type: jsPsychHtmlButtonResponse,
+            stimulus: start_prompt_suspect,
+            choices: ['Start'],
+            is_narrow: true,
+            on_finish: function() { jsPsych.setProgressBar(0.18); },
+        };
+
+        let suspect_trials = {
+            timeline: [
+            {
+                    type: marplePathDrawing,
+                    trial: 'snack2_B1',
+                    agent_type: agent_type,
+                    image_path: `trials/images/snack2_B1.png`,
+                    prompt: `
+                        <div class="trial-container">
+                            <h3 class="trial-header">Trial 1 / 3</h3>
+                            <p class="trial-prompt">Click on tiles to create a path for the agent to the fridge.</p>
+                        </div>`,
+                        is_return_path: false,
+                    grid_width: 15,
+                    grid_height: 15,
+                    agent_location: [11, 10],
+                    fridge_location: [6, 1],
+                    fridge_full_location: [],
+                    fridge_access_point: [5, 3],
+                    rooms: [],
+                    doors: [],
+                    agent_name: "",
+                    agent_id: "",
+                    furniture_locations: [],
+                    agent_door_pos: [11, 7],
+                    other_agent_door_pos: [3, 7],
+                    on_start: async function(trial) {
+                        const trialData = await loadTrialDataB('snack2_B1');
+                        if (trialData) {
+                            Object.assign(trial, trialData);
+                        }
+                        jsPsych.setProgressBar(0.18);
+                    },
+                    on_finish: function(data) {
+                        jsPsych.data.addProperties({
+                            example_trial_path: data.selected_tiles,
+                            current_agent: 'B',
+                            trial_sequence: 'to_fridge'
+                        });
+                        jsPsych.setProgressBar(0.20);
+                    }
+                },
+                {
+                    type: marplePathDrawing,
+                    trial: 'snack2_B2',
+                    agent_type: agent_type,
+                    image_path: `trials/images/snack2_B2.png`,
+                    prompt: `
+                        <div class="trial-container">
+                            <h3 class="trial-header">Trial 1 / 3</h3>
+                            <p class="trial-prompt">Now, create a path for the agent to return from the fridge to their starting position.</p>
+                        </div>`,
+                    is_return_path: true,
+                    grid_width: 15,
+                    grid_height: 15,
+                    agent_location: [5, 3],
+                    fridge_location: [6, 1],
+                    fridge_full_location: [],
+                    fridge_access_point: [5, 3],
+                    rooms: [],
+                    doors: [],
+                    agent_name: "",
+                    agent_id: "",
+                    furniture_locations: [],
+                    agent_door_pos: [11, 7],
+                    other_agent_door_pos: [3, 7],
+                    start_tile: [5, 3],
+                    target_tile: [11, 10],
+                    on_start: async function(trial) {
+                        const trialData = await loadTrialDataB('snack2_B1');
+                        if (trialData) {
+                            const initialPos = trialData.agent_location;
+                            const returnData = await loadTrialDataB('snack2_B2');
+                            if (returnData) {
+                                Object.assign(trial, returnData);
+                                trial.start_tile = returnData.fridge_access_point;
+                                trial.target_tile = initialPos;
+                                trial.initial_pos = initialPos;
+                            }
+                        }
+                        jsPsych.setProgressBar(0.20);
+                    },
+                    show_previous_path: true,
+                    previous_path: () => {
+                        let previousData = jsPsych.data.get().last(1).values()[0];
+                        if (previousData.current_agent === 'B' && previousData.trial_sequence === 'to_fridge') {
+                            return previousData.selected_tiles || [];
+                        }
+                        return [];
+                    },
+                    on_finish: function(data) {
+                        jsPsych.data.addProperties({
+                            example_trial_path: data.selected_tiles,
+                            current_agent: 'B',
+                            trial_sequence: 'from_fridge'
+                        });
+                        jsPsych.setProgressBar(0.22);
+                    }
+                },
+                {
+                    type: marplePathDrawing,
+                    trial: 'snack3_A1',
+                    agent_type: agent_type,
+                    image_path: `trials/images/snack3_A1.png`,
+                    prompt: `
+                        <div class="trial-container">
+                            <h3 class="trial-header">Trial 2 / 3</h3>
+                            <p class="trial-prompt">Click on tiles to create a path for the agent to the fridge.</p>
+                        </div>`,
+                        is_return_path: false,
+                    grid_width: 15,
+                    grid_height: 15,
+                    agent_location: [3, 5],
+                    fridge_location: [12, 11],
+                    fridge_full_location: [],
+                    fridge_access_point: [11, 13],
+                    rooms: [],
+                    doors: [],
+                    agent_name: "",
+                    agent_id: "",
+                    furniture_locations: [],
+                    agent_door_pos: [3, 8],
+                    other_agent_door_pos: [11, 8],
+                    on_start: async function(trial) {
+                        const trialData = await loadTrialDataA('snack3_A1');
+                        if (trialData) {
+                            Object.assign(trial, trialData);
+                        }
+                        jsPsych.setProgressBar(0.22);
+                    },
+                    on_finish: function(data) {
+                        jsPsych.data.addProperties({
+                            example_trial_path: data.selected_tiles,
+                            current_agent: 'A',
+                            trial_sequence: 'to_fridge'
+                        });
+                        jsPsych.setProgressBar(0.24);
+                    }
+                },
+                {
+                    type: marplePathDrawing,
+                    trial: 'snack3_A2',
+                    agent_type: agent_type,
+                    image_path: `trials/images/snack3_A2.png`,
+                    prompt: `
+                        <div class="trial-container">
+                            <h3 class="trial-header">Trial 2 / 3</h3>
+                            <p class="trial-prompt">Now, create a path for the agent to return from the fridge to their starting position.</p>
+                        </div>`,
+                    is_return_path: true,
+                    grid_width: 15,
+                    grid_height: 15,
+                    agent_location: [11, 13],
+                    fridge_location: [8, 11],
+                    fridge_full_location: [],
+                    fridge_access_point: [11, 13],
+                    rooms: [],
+                    doors: [],
+                    agent_name: "",
+                    agent_id: "",
+                    furniture_locations: [],
+                    agent_door_pos: [3, 8],
+                    other_agent_door_pos: [11, 8],
+                    start_tile: [11, 13],
+                    target_tile: [3, 5],
+                    on_start: async function(trial) {
+                        const trialData = await loadTrialDataA('snack3_A1');
+                        if (trialData) {
+                            const initialPos = trialData.agent_location;
+                            const returnData = await loadTrialDataA('snack3_A2');
+                            if (returnData) {
+                                Object.assign(trial, returnData);
+                                trial.start_tile = returnData.fridge_access_point;
+                                trial.target_tile = initialPos;
+                                trial.initial_pos = initialPos;
+                            }
+                        }
+                        jsPsych.setProgressBar(0.24);
+                    },
+                    show_previous_path: true,
+                    previous_path: () => {
+                        let previousData = jsPsych.data.get().last(1).values()[0];
+                        if (previousData.current_agent === 'A' && previousData.trial_sequence === 'to_fridge') {
+                            return previousData.selected_tiles || [];
+                        }
+                        return [];
+                    },
+                    on_finish: function(data) {
+                        jsPsych.data.addProperties({
+                            example_trial_path: data.selected_tiles,
+                            current_agent: 'A',
+                            trial_sequence: 'from_fridge'
+                        });
+                        jsPsych.setProgressBar(0.26);
+                    }
+                },
+                {
+                    type: marplePathDrawing,
+                    trial: 'snack9_A1',
+                    agent_type: agent_type,
+                    image_path: `trials/images/snack9_A1.png`,
+                    prompt: `
+                        <div class="trial-container">
+                            <h3 class="trial-header">Trial 3 / 3</h3>
+                            <p class="trial-prompt">Click on tiles to create a path for the agent to the fridge.</p>
+                        </div>`,
+                    is_return_path: false,
+                    grid_width: 15,
+                    grid_height: 15,
+                    agent_location: [5, 4],
+                    fridge_location: [12, 1],
+                    fridge_full_location: [],
+                    fridge_access_point: [11, 3],
+                    rooms: [],
+                    doors: [],
+                    agent_name: "",
+                    agent_id: "",
+                    furniture_locations: [],
+                    agent_door_pos: [7, 5],
+                    other_agent_door_pos: [7, 10],
+                    on_start: async function(trial) {
+                        const trialData = await loadTrialDataA('snack9_A1');
+                        if (trialData) {
+                            Object.assign(trial, trialData);
+                        }
+                        jsPsych.setProgressBar(0.26);
+                    },
+                    on_finish: function(data) {
+                        jsPsych.data.addProperties({
+                            example_trial_path: data.selected_tiles,
+                            current_agent: 'A',
+                            trial_sequence: 'to_fridge'
+                        });
+                        jsPsych.setProgressBar(0.28);
+                    }
+                },
+                {
+                    type: marplePathDrawing,
+                    trial: 'snack9_A2',
+                    agent_type: agent_type,
+                    image_path: `trials/images/snack9_A2.png`,
+                    prompt: `
+                        <div class="trial-container">
+                            <h3 class="trial-header">Trial 3 / 3</h3>
+                            <p class="trial-prompt">Now, create a path for the agent to return from the fridge to their starting position.</p>
+                        </div>`,
+                    is_return_path: true,
+                    grid_width: 15,
+                    grid_height: 15,
+                    agent_location: [11, 3],
+                    fridge_location: [12, 1],
+                    fridge_full_location: [],
+                    fridge_access_point: [11, 3],
+                    rooms: [],
+                    doors: [],
+                    agent_name: "",
+                    agent_id: "",
+                    furniture_locations: [],
+                    agent_door_pos: [7, 5],
+                    other_agent_door_pos: [7, 10],
+                    start_tile: [11, 3],
+                    target_tile: [5, 4],
+                    on_start: async function(trial) {
+                        const trialData = await loadTrialDataA('snack9_A1');
+                        if (trialData) {
+                            const initialPos = trialData.agent_location;
+                            const returnData = await loadTrialDataA('snack9_A2');
+                            if (returnData) {
+                                Object.assign(trial, returnData);
+                                trial.start_tile = returnData.fridge_access_point;
+                                trial.target_tile = initialPos;
+                                trial.initial_pos = initialPos;
+                            }
+                        }
+                        jsPsych.setProgressBar(0.28);
+                    },
+                    show_previous_path: true,
+                    previous_path: () => {
+                        let previousData = jsPsych.data.get().last(1).values()[0];
+                        if (previousData.current_agent === 'A' && previousData.trial_sequence === 'to_fridge') {
+                            return previousData.selected_tiles || [];
+                        }
+                        return [];
+                    },
+                    on_finish: function(data) {
+                        jsPsych.data.addProperties({
+                            example_trial_path: data.selected_tiles,
+                            current_agent: 'A',
+                            trial_sequence: 'from_fridge'
+                        });
+                        jsPsych.setProgressBar(0.30);
+                    }
+                },
+            ]
+        };
+
+
+        let instructions_detective = {
+            type: marpleInstructions,
+            pages: instruction_pages_detective,
+            show_clickable_nav: true,
+            on_start: function() { jsPsych.setProgressBar(0.30); },
+            on_finish: function() { jsPsych.setProgressBar(0.34); }
+        }
+
+        let example_trials = {
+            timeline_variables: [{
+                display_num: "Example",
+                original_num: 4,
+                trial: 4,
+                mission: condition == 0 ? 
+                    "Who do you think got a snack from the fridge?" :
+                    "Who do you think stole the snack from the fridge?",
+                final_scene: `trials/images/example.png`,
+                a_type: "A",
+                b_type: "D",
+                response: null,
+                agent_type: agent_type,
+                trial_type: 'html-button-response'
+            }],
+            timeline: [{
+                type: jsPsychHtmlButtonResponse,
+                stimulus: function() {
+                    const display_num = jsPsych.timelineVariable('display_num');
+                    const original_num = jsPsych.timelineVariable('original_num');
+                    const current_mission = jsPsych.timelineVariable('mission');
+                    const final_scene = jsPsych.timelineVariable('final_scene');
+                    const a_type = jsPsych.timelineVariable('a_type');
+                    const b_type = jsPsych.timelineVariable('b_type');
+                    const response = jsPsych.timelineVariable('response');
+                    const agent_type = jsPsych.timelineVariable('agent_type');
+                    const trial_type = jsPsych.timelineVariable('trial_type');
+
+                    let html = `
+                        <h3>${display_num} Trial</h3>
+                        <p>${current_mission}</p>
+                        <p>Click on the slider below to indicate your answer.</p>
+                        <div class="scene-container">
+                            <div class="scene">
+                                <img src="${final_scene}" class="scene-img">
+                            </div>
+                        </div>
+                        <div class="jspsych-html-slider-response-container" style="position:relative; margin: 40px auto 5em auto; width:500px;">
+                            <div style="width: 100%;" class="jspsych-html-slider-response-response slider-three"></div>
+                            <div>
+                                <div style="display: inline-block; position: absolute; left:-10%; text-align: center; width: 20%;">
+                                    <span style="text-align: center; font-size: 80%;">definitely <img src="../instructions/agents/${a_type}.png" style="width: 20px; vertical-align: middle;"></span>
+                                </div>
+                                <div style="display: inline-block; position: absolute; left:40%; top: 170%; text-align: center; width: 20%;">
+                                    <span style="text-align: center; font-size: 80%;">uncertain</span>
+                                </div>
+                                <div style="display: inline-block; position: absolute; left:90%; text-align: center; width: 20%;">
+                                    <span style="text-align: center; font-size: 80%;">definitely <img src="../instructions/agents/${b_type}.png" style="width: 20px; vertical-align: middle;"></span>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="error-message" style="color: red; height: 20px; margin: 10px; font-size: 14px;"></div>
+                    `;
+                    return html;
+                },
+                choices: ['Continue'],
+                button_html: '<button id="jspsych-html-slider-response-next" class="jspsych-btn" disabled>%choice%</button>',
+                on_load: function() {
+                    const slider = $('.jspsych-html-slider-response-response');
+                    
+                    slider.slider({
+                        min: -50,
+                        max: 50,
+                        value: 0,
+                        step: 1
+                    });
+                    slider.slider('pips', {
+                        first: 'pip',
+                        last: 'pip',
+                        step: 50
+                    });
+                    
+                    $('.ui-slider-handle').hide();
+                    
+                    $('.ui-slider-pip').css({
+                        'pointer-events': 'none',
+                        'z-index': 1
+                    });
+                    $('.ui-slider-label').css({
+                        'pointer-events': 'none',
+                        'z-index': 1
+                    });
+                    
+                    slider.on('slidestart', function() {
+                        $(this).find('.ui-slider-handle').show();
+                        $('#jspsych-html-slider-response-next').prop('disabled', false);
+                        $('#error-message').text('');
+                    });
+
+                    slider.on('slide', function() {
+                        $('#jspsych-html-slider-response-next').prop('disabled', false);
+                    });
+                },
+                on_finish: function() {
+                    jsPsych.setProgressBar(0.36);
+                }
+            }]
+        }
+
+        let instructions_last_detective = {
+            type: jsPsychHtmlButtonResponse,
+            stimulus: instructions_last_page_detective,
+            choices: ['Continue'],
+            is_narrow: true,
+            on_finish: function() { jsPsych.setProgressBar(0.38); }
+        }
+
+        let comprehension_qs = {
+            type: jsPsychSurveyMultiChoice,
+            questions: condition == 0 ? [
+                {
+                    prompt: comprehension_detective1,
+                    options: options_detective1,
+                    horizontal: true,
+                    required: true
+                },
+                {
+                    prompt: comprehension_detective2,
+                    options: options_detective2,
+                    horizontal: true,
+                    required: true
+                },
+                {
+                    prompt: comprehension_detective3,
+                    options: options_detective3,
+                    horizontal: true,
+                    required: true
+                }
+            ] : [
+                {
+                    prompt: comprehension_detective1,
+                    options: options_detective1,
+                    horizontal: true,
+                    required: true
+                },
+                {
+                    prompt: comprehension_detective2,
+                    options: options_detective2,
+                    horizontal: true,
+                    required: true
+                },
+                {
+                    prompt: comprehension_detective3,
+                    options: options_detective3,
+                    horizontal: true,
+                    required: true
+                }
+            ],
+            preamble: 'Please answer a few questions so we know that you understand the instructions.',
+            on_finish: function(data){
+                if (condition == 0) {
+                    data.correct = (data.response.Q0 == 'True'
+                        && data.response.Q1 == 'True'
+                        && data.response.Q2 == 'False');
+                } else {
+                    data.correct = (data.response.Q0 == 'True'
+                        && data.response.Q1 == 'True'
+                        && data.response.Q2 == 'False');
+                }
+                jsPsych.setProgressBar(0.40);
+            }
+        }
+
+        let fail_comprehension = {
+            timeline: [{
+                type: jsPsychHtmlButtonResponse,
+                stimulus: '<p>Unfortunately, you missed some of the comprehension questions.</p> \
+                            <p>Please review the instructions again.</p>',
+                choices: ['Review'],
+            }],
+            conditional_function: function(){
+                var data = jsPsych.data.get().last(1).trials[0];
+                return !(data.correct);
+            }
+        }
+
+        let loop_node = {
+            timeline: [
+                instructions_suspect,
+                example_suspect_trials,
+                instructions_last_suspect,
+                comprehension_q_suspects,
+                {
+                    timeline: [
+                        {
+                            type: jsPsychHtmlButtonResponse,
+                            stimulus: '<p>Unfortunately, you missed some of the comprehension questions.</p> \
+                                        <p>Please review the instructions again from the beginning.</p>',
+                            choices: ['Restart'],
+                        }
+                    ],
+                    conditional_function: function() {
+                        let suspect_comprehension = jsPsych.data.get()
+                            .filter({trial_type: 'survey-multi-choice'})
+                            .last(1)
+                            .values()[0];
+                        return !suspect_comprehension.correct;
+                    }
+                },
+                {
+                    timeline: [
+                        trials_start_suspect,
+                        suspect_trials,
+                        {
+                            timeline: [
+                                instructions_detective,
+                                example_trials,
+                                instructions_last_detective,
+                                comprehension_qs,
+                                fail_comprehension
+                            ],
+                            conditional_function: function() {
+                                let suspect_comprehension = jsPsych.data.get()
+                                    .filter({trial_type: 'survey-multi-choice'})
+                                    .last(1)
+                                    .values()[0];
+                                return suspect_comprehension.correct;
+                            }
+                        }
+                    ],
+                    conditional_function: function() {
+                        let suspect_comprehension = jsPsych.data.get()
+                            .filter({trial_type: 'survey-multi-choice'})
+                            .last(1)
+                            .values()[0];
+                        return suspect_comprehension.correct;
+                    }
+                }
+            ],
+            loop_function: function(data) {
+                let last_comprehension = jsPsych.data.get()
+                    .filter({trial_type: 'survey-multi-choice'})
+                    .last(1)
+                    .values()[0];
+                
+                return !last_comprehension.correct;
+            }
+        };
+
+        let trials_start_detective = {
+            type: jsPsychHtmlButtonResponse,
+            stimulus: start_prompt_detective,
+            choices: ['Start'],
+            is_narrow: true,
+            on_finish: function() { jsPsych.setProgressBar(0.42); },
+        };
+
+
+        Promise.all(
+            Array.from({length: 27}, (_, i) => i + 1).map(i =>
+                fetch(`trials/json/${i}.json`)
+                    .then(response => response.json())
+                    .then(data => ({
+                        original_num: i, 
+                        mission: condition == 0 ? 
+                                "Who do you think got a snack from the fridge?" :
+                                "Who do you think stole the snack from the fridge?",
+                        final_scene: `trials/images/${i}.png`,
+                        a_type: data.Grid.agents.initial[0].name,
+                        b_type: data.Grid.agents.initial[1].name,
+                        response: null,
+                        agent_type: agent_type,
+                        trial_type: 'html-judgment-response'
+                    }))
+            )
+        ).then(trial_info => {
+            const shuffled_trials = jsPsych.randomization.shuffle(trial_info)
+                .map((trial, index) => ({
+                    ...trial,
+                    display_num: index + 1 
+                }));
+            
+            let trials = {
+                timeline_variables: shuffled_trials,
+                timeline: [{
+                    type: jsPsychHtmlJudgmentResponse,
+                    stimulus: function() {
+                        const display_num = jsPsych.timelineVariable('display_num');
+                        const current_mission = jsPsych.timelineVariable('mission');
+                        const final_scene = jsPsych.timelineVariable('final_scene');
+                        const a_type = jsPsych.timelineVariable('a_type');
+                        const b_type = jsPsych.timelineVariable('b_type');
+                        const response = jsPsych.timelineVariable('response');
+                        const agent_type = jsPsych.timelineVariable('agent_type');
+                        const trial_type = jsPsych.timelineVariable('trial_type');
+
+                        let html = `
+                            <h3>Trial ${display_num} / ${shuffled_trials.length}</h3>
+                            <p>${current_mission}</p>
+                            <div class="scene-container">
+                                <div class="scene">
+                                    <img src="${final_scene}" class="scene-img">
+                                </div>
+                            </div>
+                            <div class="jspsych-html-slider-response-container" style="position:relative; margin: 40px auto 5em auto; width:500px;">
+                                <div style="width: 100%;" class="jspsych-html-slider-response-response slider-three"></div>
+                                <div>
+                                    <div style="display: inline-block; position: absolute; left:-10%; text-align: center; width: 20%;">
+                                        <span style="text-align: center; font-size: 80%;">definitely <img src="../instructions/agents/${a_type}.png" style="width: 20px; vertical-align: middle;"></span>
+                                    </div>
+                                    <div style="display: inline-block; position: absolute; left:40%; top: 170%; text-align: center; width: 20%;">
+                                        <span style="text-align: center; font-size: 80%;">uncertain</span>
+                                    </div>
+                                    <div style="display: inline-block; position: absolute; left:90%; text-align: center; width: 20%;">
+                                        <span style="text-align: center; font-size: 80%;">definitely <img src="../instructions/agents/${b_type}.png" style="width: 20px; vertical-align: middle;"></span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div id="error-message" style="color: red; height: 20px; margin: 10px; font-size: 14px;"></div>
+                        `;
+                        return html;
+                    },
+                    choices: ['Continue'],
+                    button_html: '<button id="jspsych-html-slider-response-next" class="jspsych-btn" disabled>%choice%</button>',
+                    data: function() {
+                        return {
+                            display_num: jsPsych.timelineVariable('display_num'),
+                            original_num: jsPsych.timelineVariable('original_num'),
+                            agent_a: jsPsych.timelineVariable('a_type'),
+                            agent_b: jsPsych.timelineVariable('b_type'),
+                            response: jsPsych.timelineVariable('response'),
+                            agent_type: jsPsych.timelineVariable('agent_type'),
+                            trial_type: 'html-judgment-response',
+                            trial_idx: trial_idx 
+                        };
+                    },
+                    on_load: function() {
+                        const slider = $('.jspsych-html-slider-response-response');
+                        
+                        slider.slider({
+                            min: -50,
+                            max: 50,
+                            value: 0,
+                            step: 1
+                        }).slider('pips', {
+                            first: 'pip',
+                            last: 'pip',
+                            step: 50
+                        }).on('slidestart', function(event, ui) {
+                            $(this).find('.ui-slider-handle').show();
+                            $('#jspsych-html-slider-response-next').prop('disabled', false);
+                            
+                            jsPsych.getCurrentTrial().data.response = ui.value;
+                            jsPsych.data.write({
+                                response: ui.value
+                            });
+                        }).on('slide', function(event, ui) {
+                            $(this).find('.ui-slider-handle').show();
+                            $('#jspsych-html-slider-response-next').prop('disabled', false);
+                            
+                            jsPsych.getCurrentTrial().data.response = ui.value;
+                            jsPsych.data.write({
+                                response: ui.value
+                            });
+                        });
+                        
+                        $('.ui-slider-handle').hide();
+
+                        $('.ui-slider-pip').css({
+                        'pointer-events': 'none',
+                        'z-index': 1
+                        });
+                        $('.ui-slider-label').css({
+                            'pointer-events': 'none',
+                            'z-index': 1
+                        });
+                    },
+                    on_finish: function(data) {
+                        trial_idx++;  
+                        const trial_progress = 0.42 + (jsPsych.timelineVariable('display_num') * (0.58 / 27));
+                        jsPsych.setProgressBar(trial_progress);
+                        
+                        trial_data = jsPsych.data.get().filter({trial_type: 'html-judgment-response'})
+                                     .filter(trial => trial.stimulus && trial.agent_a !== null && trial.agent_a !== undefined 
+                                                 && trial.agent_b !== null && trial.agent_b !== undefined)
+                                     .trials;
+
+                        slider_response_data = trial_data.slice(4);
+                    }
+                }]
+            };
+
+            // -----------------------------------------------------
+            // save data
+            // -----------------------------------------------------
+            const prolific_id = jsPsych.data.getURLVariable('PROLIFIC_PID');
+
+            const save_trial_data = {
+                type: jsPsychPipe,
+                action: "save",
+                experiment_id: "wWfWoGU9OLns",
+                filename: `${prolific_id}_trials.csv`,
+                condition: condition,
+                data_string: () => {
+                    const convertTilesToArrays = (tiles) => {
+                        if (!Array.isArray(tiles)) return [];
+                        return tiles.map(tile => [tile.row, tile.col]);
+                    };
+
+                    const allSuspectTrials = jsPsych.data.get()
+                        .filter({trial_type: 'marple-path-drawing'})
+                        .filter(trial => trial.example_trial_path !== undefined)
+                        .values();
+
+                    const trialMap = new Map();
+                    jsPsych.data.get()
+                        .filter({trial_type: 'html-judgment-response'})
+                        .values()
+                        .forEach(trial => {
+                            trialMap.set(trial.trial_idx, trial); 
+                        });
+
+                    const allDetectiveTrials = Array.from(trialMap.values());
+
+                    const formattedTrials = [
+                        ...allSuspectTrials.map((trial, index) => {
+                            const original_num = trial.trial ? trial.trial.replace(/(_[12])$/, '') : '';
+                            const display_num = Math.floor(index/2) + 1;
+                            const is_return_path = index % 2 === 1;
+                            
+                            return {
+                                id: prolific_id,
+                                condition: condition,
+                                agent_type: trial.agent_type,
+                                trial_idx: 'example',
+                                original_num: original_num,
+                                display_num: display_num,
+                                is_return_path: is_return_path,
+                                agent_a: '',
+                                agent_b: '',
+                                response: JSON.stringify(convertTilesToArrays(trial.selected_path_tiles || [])),
+                                time_elapsed: trial.time_elapsed
+                            };
+                        }),
+                        ...allDetectiveTrials.map(trial => ({
+                            id: prolific_id,
+                            condition: condition,
+                            agent_type: trial.agent_type,
+                            trial_idx: trial.trial_idx,
+                            original_num: trial.original_num,
+                            display_num: trial.display_num,
+                            is_return_path: '',
+                            agent_a: trial.agent_a,
+                            agent_b: trial.agent_b,
+                            response: trial.response,
+                            time_elapsed: trial.time_elapsed
+                        }))
+                    ];
+
+                    const header = "id,condition,agent_type,trial_idx,original_num,display_num,is_return_path,agent_a,agent_b,response,time_elapsed";
+                    const rows = formattedTrials.map(t => 
+                        Object.values(t).map(v => 
+                            typeof v === 'string' && v.includes(',') ? `"${v}"` : v
+                        ).join(',')
+                    );
+
+                    const trials_csv = [header, ...rows].join("\n");
+                    
+                    return trials_csv;
+                }
+            };
+                        
+
+            const save_participant_data = {
+                type: jsPsychPipe,
+                action: "save",
+                experiment_id: "wWfWoGU9OLns",
+                filename: `${prolific_id}_participant.csv`,
+                condition: condition,
+                data_string: () => {
+                    const time = TimeMe.getTimeOnPageInSeconds('page');
+                    const surveyData = jsPsych.data.get()
+                        .filter({trial_type: 'survey-html-form'})
+                        .last(1)
+                    .values()[0];
+                
+                    if (!surveyData || !surveyData.response) {
+                        console.error("No survey data found");
+                        return "";
+                    }
+                    
+                    const response = surveyData.response;
+                    const time_elapsed = surveyData.time_elapsed;
+                    
+                    const participant = [
+                        prolific_id,
+                        condition,
+                        `"${response.prediction_factors || ''}"`,
+                        `"${response.feedback || ''}"`,
+                        response.age || "",
+                        response.gender || "",
+                        response.race || "",
+                        `"${response.ethnicity || ''}"`,
+                        time,
+                        time_elapsed
+                    ].join(",");
+                    
+                    const header = "id,condition,prediction_factors,feedback,age,gender,race,ethnicity,time,time_elapsed";
+                    const participant_csv = header + "\n" + participant;
+
+                    return participant_csv;
+                }
+            };
+
+        let preload_trial = {
+            type: jsPsychPreload,
+            auto_preload: true,  
+            images: [
+                '../instructions/agents/A.png',
+                '../instructions/agents/B.png',
+                '../instructions/agents/C.png',
+                '../instructions/agents/D.png',
+                '../instructions/agents/E.png',
+                '../instructions/agents/F.png',
+                '../instructions/demo_path1.gif',
+                '../instructions/demo_path2.gif',
+                '../instructions/demo_before.png',
+                '../instructions/demo_after.png',
+                '../instructions/demo_slider.png',
+                '../instructions/draw-path-demo.gif',
+                '../instructions/no-walls-demo.gif',
+                '../instructions/clear-path-demo.gif',
+                '../instructions/submit-path-demo.gif',
+                '../instructions/demo_steal_think.png',
+                '../instructions/demo_steal_crumb.png',
+                'trials/images/example.png',
+                'trials/images/snack4_A1.png',
+                'trials/images/snack4_A2.png',
+                'trials/images/snack2_B1.png',
+                'trials/images/snack2_B2.png',
+                'trials/images/snack3_A1.png',
+                'trials/images/snack3_A2.png',
+                'trials/images/snack9_A1.png',
+                'trials/images/snack9_A2.png',
+                
+                ...Array.from({length: 27}, (_, i) => [
+                    `trials/images/${i + 1}.png`
+                ]).flat()
+            ],
+            message: 'Loading experiment materials...',
+            show_progress_bar: true,
+            continue_after_error: false,
+            max_load_time: 1000,
+            error_message: 'An error occurred while loading.',
+            show_detailed_errors: true,
+            on_error: function(file) {
+                console.error('Error loading file:', file);
+            },
+            on_success: function() {
+                // console.log('All files loaded successfully.');
+            }
+        };
+
+        let timeline = [];
+        timeline.push(preload_trial);
+        timeline.push(consent);
+        timeline.push(loop_node);
+        timeline.push(trials_start_detective);
+        timeline.push(trials);
+        timeline.push(demographic_form);
+        // timeline.push(save_trial_data);
+        // timeline.push(save_participant_data);
+
+        jsPsych.run(timeline);
+        });
+    }
+
+</script>
+</body>
+</html>
