@@ -7,6 +7,7 @@ This repository contains materials for the paper "Leave a trace: Recursive reaso
 - [Experiments](#experiments)
 - [Repository structure](#repository-structure)
 - [CRediT author statement](#credit-author-statement)
+- [Citation](#citation)
 
 ## Introduction
 
@@ -37,7 +38,7 @@ The experiments can be previewed at the links below:
 └── figures
 ```
 - `code`: contains code for model and analysis. 
-	- `analysis`: code for analyzing data and generating figures, written in R (view a rendered file [here](https://cicl-stanford.github.io/recursive_deception/)).
+	- `analysis`: code for analyzing data and generating figures, written in R (view a rendered file [here](https://cicl-stanford.github.io/recursive_deception/analysis.html)).
 	- `simulation_model`: code for the simulation model. 
 	- `trials`: trial data used by the simulation model. 
 - `data`: contains data for analyses.
