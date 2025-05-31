@@ -75,7 +75,7 @@ The experiments can be previewed at the links below:
 ## Citation
 
 ```
-@inproceedings{teo2025deception,
+@inproceedings{teo2025leave,
   title = {Leave a trace: Recursive reasoning about deception},
   booktitle = {Proceedings of the 47th Annual Conference of the Cognitive Science Society},
   author = {Verona Teo and Sarah A. Wu and Erik Brockbank and Tobias Gerstenberg},
